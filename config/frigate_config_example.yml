@@ -1,0 +1,175 @@
+# Frigate Configuration - Ejemplo para proxmox-lugar1 (Intel N95 + Coral USB)
+#
+# IMPORTANTE: Reemplaza las URLs RTSP con tus propias camaras
+# Este ejemplo refleja la config v4.1 operativa (sin credenciales reales)
+# v4.1: Dual stream para cam4-6 (mainstream 2K para grabar, substream para detectar)
+
+auth:
+  enabled: true
+
+mqtt:
+  enabled: true
+  host: 127.0.0.1
+  port: 1883
+
+detectors:
+  coral:
+    type: edgetpu
+    device: usb
+
+# VAAPI para Intel N95 (NO usar preset-rpi en x86)
+ffmpeg:
+  hwaccel_args: preset-vaapi
+
+objects:
+  track:
+    - person
+    - car
+    - dog
+    - cat
+  filters:
+    person:
+      min_score: 0.65
+      min_area: 1500
+    car:
+      min_score: 0.65
+      min_area: 2000
+    dog:
+      min_score: 0.5
+      min_area: 200
+    cat:
+      min_score: 0.4
+      min_area: 200
+
+record:
+  enabled: true
+  retain:
+    days: 1
+    mode: motion
+  events:
+    retain:
+      default: 7
+      mode: active_objects
+
+snapshots:
+  enabled: true
+  bounding_box: true
+  retain:
+    default: 7
+
+# Streams via go2rtc (integrado en Frigate 0.17+)
+# Dual stream: camX = substream (detect + display RPi5), camX_main = mainstream (record 2K)
+go2rtc:
+  streams:
+    # NVR Dahua cam1-3: solo substream (352x240, sin mainstream disponible)
+    cam1:
+      - rtsp://usuario:password@198.51.100.xxx:554/cam/realmonitor?channel=1&subtype=1
+    cam2:
+      - rtsp://usuario:password@198.51.100.xxx:554/cam/realmonitor?channel=2&subtype=1
+    cam3:
+      - rtsp://usuario:password@198.51.100.xxx:554/cam/realmonitor?channel=3&subtype=1
+    # ICSee dual lens: substream 800x448 para detect/display
+    cam4:
+      - rtsp://usuario:password@198.51.100.xxx:554/cam/realmonitor?channel=4&subtype=1
+    cam5:
+      - rtsp://usuario:password@198.51.100.xxx/ch0_1.h264
+    cam6:
+      - rtsp://usuario:password@198.51.100.xxx/ch0_1.h264
+    # ICSee dual lens: mainstream 2560x1440 para record
+    cam4_main:
+      - rtsp://usuario:password@198.51.100.xxx:554/cam/realmonitor?channel=4&subtype=0
+    cam5_main:
+      - rtsp://usuario:password@198.51.100.xxx/ch0_0.h264
+    cam6_main:
+      - rtsp://usuario:password@198.51.100.xxx/ch0_0.h264
+
+cameras:
+  cam1_nvr:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam1
+          input_args: preset-rtsp-restream
+          roles: [detect]
+    detect:
+      enabled: true
+      width: 352
+      height: 240
+      fps: 5
+
+  cam2_nvr:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam2
+          input_args: preset-rtsp-restream
+          roles: [detect]
+    detect:
+      enabled: true
+      width: 352
+      height: 240
+      fps: 5
+
+  cam3_nvr:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam3
+          input_args: preset-rtsp-restream
+          roles: [detect]
+    detect:
+      enabled: true
+      width: 352
+      height: 240
+      fps: 5
+
+  # Dual stream: mainstream (2560x1440) para record, substream (800x448) para detect
+  cam4_icsee:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam4_main
+          input_args: preset-rtsp-restream
+          roles: [record]
+        - path: rtsp://127.0.0.1:8554/cam4
+          input_args: preset-rtsp-restream
+          roles: [detect]
+    detect:
+      enabled: true
+      width: 800
+      height: 448
+      fps: 5
+
+  cam5_remota:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam5_main
+          input_args: preset-rtsp-restream
+          roles: [record]
+        - path: rtsp://127.0.0.1:8554/cam5
+          input_args: preset-rtsp-restream
+          roles: [detect]
+    detect:
+      enabled: true
+      width: 800
+      height: 448
+      fps: 5
+
+  cam6_remota:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam6_main
+          input_args: preset-rtsp-restream
+          roles: [record]
+        - path: rtsp://127.0.0.1:8554/cam6
+          input_args: preset-rtsp-restream
+          roles: [detect]
+    detect:
+      enabled: true
+      width: 800
+      height: 448
+      fps: 5
+
+version: 0.17-0

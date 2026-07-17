@@ -1,0 +1,12 @@
+[Unit]
+# RES-4b — exporta temp/throttled del RPi5 a node_exporter (textfile). En el RPi5.
+Description=Exportar temperatura/throttled del RPi5 a Prometheus (textfile collector)
+After=prometheus-node-exporter.service
+
+[Service]
+Type=oneshot
+# Desplegado (s3) con el paquete Debian 'prometheus-node-exporter' (user prometheus):
+#   /etc/default/prometheus-node-exporter -> ARGS="--collector.textfile.directory=/var/lib/prometheus/node-exporter"
+Environment=TEXTFILE_DIR=/var/lib/prometheus/node-exporter
+ExecStart=/usr/local/bin/rpi5_node_textfile_temp.sh
+Nice=15

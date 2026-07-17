@@ -1,0 +1,12 @@
+[Unit]
+Description=Restart semanal de Frigate (domingo 04:00)
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00
+# Si el LXC estaba apagado el domingo a las 04:00, correr al volver. RES-9.
+Persistent=true
+RandomizedDelaySec=300
+Unit=frigate-weekly-restart.service
+
+[Install]
+WantedBy=timers.target

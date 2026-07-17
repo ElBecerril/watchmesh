@@ -1,0 +1,13 @@
+[Unit]
+# RES-9 — reemplaza el cron "dom 04:00 docker restart frigate" (LXC 200).
+# Mitiga el memory leak de Frigate (~1GB/dia). Complementa el restart por
+# umbral de RSS del emergency_watchdog (RES-7).
+Description=Restart semanal de Frigate (memory leak mitigation)
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Ajustar al nombre/stack reales del contenedor (docker compose: usar el de su .yml).
+Environment=FRIGATE_CONTAINER=frigate
+ExecStart=/usr/bin/docker restart ${FRIGATE_CONTAINER}

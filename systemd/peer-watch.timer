@@ -1,0 +1,10 @@
+[Unit]
+Description=Run peer_watch (dead-man's-switch capa 1) cada 5 min
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Muestreo periodico de temp/throttled del RPi5 (cada 60s)
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=5s
+Unit=rpi5-temp-exporter.service
+
+[Install]
+WantedBy=timers.target

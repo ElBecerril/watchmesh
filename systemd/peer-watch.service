@@ -1,0 +1,9 @@
+[Unit]
+Description=Peer watch - dead-man's-switch capa 1 (RPi5/lugar1 vigila lugar2 + pve)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/peer_watch.sh
+TimeoutStartSec=120

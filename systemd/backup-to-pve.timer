@@ -1,0 +1,12 @@
+[Unit]
+Description=Disparo diario del backup vigilancia -> pve (02:30)
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+# Si el host estaba apagado a las 02:30 (apagon/NTP), correr al volver. RES-9.
+Persistent=true
+RandomizedDelaySec=120
+Unit=backup-to-pve.service
+
+[Install]
+WantedBy=timers.target

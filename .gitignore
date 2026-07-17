@@ -1,0 +1,105 @@
+# ===========================================
+# ARCHIVOS CON CREDENCIALES - NO SUBIR
+# ===========================================
+
+# Archivo de credenciales reales
+CREDENCIALES_REALES.md
+CREDENCIALES*.md
+credenciales*.txt
+*_credentials*
+*_secrets*
+
+# Archivos de configuración con datos reales
+config_real.yml
+*.secret
+*.secrets
+
+# Ficheros de entorno con secretos (SEC-8). Los *.example SI se versionan.
+.env
+*.env
+cam_urls.env
+!*.env.example
+
+# ===========================================
+# ARCHIVOS DE SISTEMA
+# ===========================================
+
+# Logs
+*.log
+logs/
+
+# Temporales
+*.tmp
+*.temp
+.cache/
+__pycache__/
+
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===========================================
+# IDE / EDITORES
+# ===========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===========================================
+# CLAUDE CODE
+# ===========================================
+.claude/
+.claude.json
+
+# ===========================================
+# ARCHIVOS BINARIOS / SCANNER
+# ===========================================
+*.bin
+*.pdf
+
+# ===========================================
+# SESIONES ANTIGUAS
+# ===========================================
+sesiones/
+
+# ===========================================
+# CARPETA LOCAL (no canonica: snapshots, scanner, PDFs, planes, scripts viejos)
+# ===========================================
+_local/
+
+# ===========================================
+# SCRIPTS DUPLICADOS
+# ===========================================
+matrix_camaras_v23.sh
+
+# ===========================================
+# BACKUPS LOCALES
+# ===========================================
+*.bak
+*.backup
+backups_locales/
+backups/
+
+# ===========================================
+# GIT WINDOWS
+# ===========================================
+.git-for-windows-updater
+
+# ===========================================
+# SNAPSHOTS / IMAGENES DE CAMARAS
+# ===========================================
+*.jpg
+*.jpeg
+*.png
+
+# ===========================================
+# PLANES DE TRABAJO LOCALES (no canonicos)
+# ===========================================
+plan_reinstalacion_v2.json
+plan para camaras y pc proxmox-lugar1.txt

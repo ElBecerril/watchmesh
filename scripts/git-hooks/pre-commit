@@ -1,0 +1,53 @@
+#!/bin/bash
+# ============================================================
+# Pre-commit hook anti-secretos (SEC-8)
+#
+# Bloquea commits que introduzcan secretos conocidos o patrones de credenciales.
+# Activar una vez:   git config core.hooksPath scripts/git-hooks
+# Saltar (emergencia): git commit --no-verify
+#
+# Sin dependencias externas (solo git + grep). Para algo mas robusto,
+# considerar gitleaks: https://github.com/gitleaks/gitleaks
+# ============================================================
+
+set -u
+
+# Patrones de secretos (regex extendido). Anadir aqui nuevos formatos.
+PATTERNS=(
+    '[0-9]{9,10}:AA[A-Za-z0-9_-]{30,}'      # token bot Telegram
+    'AIza[0-9A-Za-z_-]{35}'                  # API key Google/Gemini
+    'rtsp://[^[:space:]/]*:[^[:space:]/@]+@' # RTSP con user:pass embebido
+    # Nota: los literales de Frigate/FACE_API antiguos se quitaron tras SEC-9
+    # (purga git-filter-repo los reemplazo por ***REMOVED***, regex invalido +
+    # secretos ya rotados/muertos). Detectar nuevos formatos, no valores muertos.
+)
+
+# Solo revisar los ficheros en stage (added/copied/modified), excluyendo *.example
+files=$(git diff --cached --name-only --diff-filter=ACM | grep -vE '\.example$|^scripts/git-hooks/' || true)
+[ -z "$files" ] && exit 0
+
+# Placeholders permitidos (no son secretos reales). Una linea que matchee un
+# patron pero contenga uno de estos se ignora.
+PLACEHOLDERS='USER:PASS|SET_[A-Z_]+_IN_ENV|@CREDENCIALES_REALES|\$\{CAM_URLS|CHANGE_ME|usuario:password|admin:xxx'
+
+found=0
+for pat in "${PATTERNS[@]}"; do
+    # -I ignora binarios; grep sobre el contenido en stage de cada fichero.
+    # Solo cuenta si hay al menos UNA linea que matchee el patron y NO sea placeholder.
+    while IFS= read -r f; do
+        [ -f "$f" ] || continue
+        if git show ":$f" 2>/dev/null | grep -IE "$pat" | grep -qvE "$PLACEHOLDERS"; then
+            echo "BLOQUEADO: posible secreto en '$f' (patron: $pat)"
+            found=1
+        fi
+    done <<< "$files"
+done
+
+if [ "$found" -ne 0 ]; then
+    echo ""
+    echo "Commit bloqueado por el hook anti-secretos (SEC-8)."
+    echo "Mueve el secreto a un .env (gitignored) o usa placeholders."
+    echo "Si es un falso positivo: git commit --no-verify"
+    exit 1
+fi
+exit 0

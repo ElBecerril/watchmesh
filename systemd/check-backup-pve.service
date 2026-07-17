@@ -1,0 +1,14 @@
+[Unit]
+# Verificador del backup diario a pve: lee el resultado y avisa por Telegram.
+# Se instala en el HOST proxmox-lugar1. Creado (s5).
+Description=Verifica el backup diario a pve y notifica por Telegram
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Telegram token/chat + PVE_* desde el env fuera del repo (SEC-7).
+EnvironmentFile=/etc/vigilancia/vigilancia.env
+ExecStart=/usr/local/bin/check_backup_pve.sh
+SuccessExitStatus=0
+Nice=10

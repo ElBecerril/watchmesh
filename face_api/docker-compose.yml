@@ -1,0 +1,21 @@
+services:
+  face-recognition:
+    build: .
+    container_name: face-recognition
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - face_data:/data/faces
+    environment:
+      - RECOGNITION_THRESHOLD=0.45
+      - DETECTION_THRESHOLD=0.5
+      - MODEL_NAME=buffalo_l
+      - FACE_API_KEY=${FACE_API_KEY:-}
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+volumes:
+  face_data:

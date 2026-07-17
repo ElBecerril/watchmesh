@@ -1,0 +1,12 @@
+[Unit]
+Description=Chequeo diario del backup vigilancia -> pve (07:00, heartbeat Telegram)
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+# Si el host estaba apagado a las 07:00, correr al volver.
+Persistent=true
+RandomizedDelaySec=60
+Unit=check-backup-pve.service
+
+[Install]
+WantedBy=timers.target

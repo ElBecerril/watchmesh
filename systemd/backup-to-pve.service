@@ -1,0 +1,16 @@
+[Unit]
+# RES-2 + RES-9 — backup diario de DB/config al servidor pve.
+# Se instala en el HOST proxmox-lugar1 (necesita pct exec/pull al LXC 200).
+Description=Backup vigilancia (people_counter.db + Frigate config) al servidor pve
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Secretos/destino fuera del repo (SEC-7). Crear desde .env.example, chmod 600.
+EnvironmentFile=/etc/vigilancia/vigilancia.env
+ExecStart=/usr/local/bin/backup_to_pve.sh
+# No tumbar el sistema si un backup falla; el script ya alerta por Telegram/ntfy.
+SuccessExitStatus=0
+Nice=10
+IOSchedulingClass=idle
