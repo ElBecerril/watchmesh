@@ -17,9 +17,8 @@ PATTERNS=(
     '[0-9]{9,10}:AA[A-Za-z0-9_-]{30,}'      # token bot Telegram
     'AIza[0-9A-Za-z_-]{35}'                  # API key Google/Gemini
     'rtsp://[^[:space:]/]*:[^[:space:]/@]+@' # RTSP con user:pass embebido
-    # Nota: los literales de Frigate/FACE_API antiguos se quitaron tras SEC-9
-    # (purga git-filter-repo los reemplazo por ***REMOVED***, regex invalido +
-    # secretos ya rotados/muertos). Detectar nuevos formatos, no valores muertos.
+    # Nota: aqui van FORMATOS de secreto, no valores concretos. Una lista de
+    # literales envejece mal y, si se versiona, publica justo lo que protege.
 )
 
 # Solo revisar los ficheros en stage (added/copied/modified), excluyendo *.example
@@ -28,7 +27,7 @@ files=$(git diff --cached --name-only --diff-filter=ACM | grep -vE '\.example$|^
 
 # Placeholders permitidos (no son secretos reales). Una linea que matchee un
 # patron pero contenga uno de estos se ignora.
-PLACEHOLDERS='USER:PASS|SET_[A-Z_]+_IN_ENV|@CREDENCIALES_REALES|\$\{CAM_URLS|CHANGE_ME|usuario:password|admin:xxx'
+PLACEHOLDERS='USER:PASS|<USER>|<PASSWORD>|SET_[A-Z_]+_IN_ENV|\$\{CAM_URLS|CHANGE_ME|usuario:password|admin:xxx'
 
 found=0
 for pat in "${PATTERNS[@]}"; do

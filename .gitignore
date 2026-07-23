@@ -1,38 +1,30 @@
 # ===========================================
-# ARCHIVOS CON CREDENCIALES - NO SUBIR
+# SECRETOS - NUNCA SUBIR
 # ===========================================
-
-# Archivo de credenciales reales
-CREDENCIALES_REALES.md
-CREDENCIALES*.md
-credenciales*.txt
-*_credentials*
-*_secrets*
-
-# Archivos de configuración con datos reales
-config_real.yml
-*.secret
-*.secrets
+*credencial*
+*credential*
+*secret*
+*password*
+*token*
+*.key
+*.pem
+config_real*
 
 # Ficheros de entorno con secretos (SEC-8). Los *.example SI se versionan.
 .env
 *.env
-cam_urls.env
 !*.env.example
 
 # ===========================================
 # ARCHIVOS DE SISTEMA
 # ===========================================
-
-# Logs
 *.log
 logs/
-
-# Temporales
 *.tmp
 *.temp
 .cache/
 __pycache__/
+*.pyc
 
 # OS generated
 .DS_Store
@@ -43,63 +35,34 @@ ehthumbs.db
 Desktop.ini
 
 # ===========================================
-# IDE / EDITORES
+# IDE / EDITORES / HERRAMIENTAS
 # ===========================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# ===========================================
-# CLAUDE CODE
-# ===========================================
 .claude/
 .claude.json
 
 # ===========================================
-# ARCHIVOS BINARIOS / SCANNER
+# BINARIOS Y CAPTURAS
 # ===========================================
+# Los snapshots de camara son datos personales: nunca al repo.
 *.bin
 *.pdf
-
-# ===========================================
-# SESIONES ANTIGUAS
-# ===========================================
-sesiones/
-
-# ===========================================
-# CARPETA LOCAL (no canonica: snapshots, scanner, PDFs, planes, scripts viejos)
-# ===========================================
-_local/
-
-# ===========================================
-# SCRIPTS DUPLICADOS
-# ===========================================
-matrix_camaras_v23.sh
-
-# ===========================================
-# BACKUPS LOCALES
-# ===========================================
-*.bak
-*.backup
-backups_locales/
-backups/
-
-# ===========================================
-# GIT WINDOWS
-# ===========================================
-.git-for-windows-updater
-
-# ===========================================
-# SNAPSHOTS / IMAGENES DE CAMARAS
-# ===========================================
 *.jpg
 *.jpeg
 *.png
+*.mp4
+*.db
 
 # ===========================================
-# PLANES DE TRABAJO LOCALES (no canonicos)
+# LOCAL / NO CANONICO
 # ===========================================
-plan_reinstalacion_v2.json
-plan para camaras y pc proxmox-lugar1.txt
+# Bitacoras, planes de trabajo, backups y notas internas: fuera del repo.
+_local/
+sesiones/
+backups/
+*.bak
+*.backup
