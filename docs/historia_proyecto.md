@@ -41,7 +41,7 @@ failover) y cam6 **recableada** (par TX cortado reparado). **Seis de seis
 cámaras operativas, por primera vez.**
 
 ### 🛡️ Blindaje y productización
-- **Seguridad endurecida**: credenciales rotadas, historial git purgado de secretos.
+- **Seguridad endurecida**: credenciales rotadas y movidas a variables de entorno, con hook pre-commit anti-secretos.
 - **Monitoreo térmico** del RPi5 (tras instalar el Active Cooler oficial).
 - **Alertas por doble canal** (ntfy + Telegram): si un canal cae, el otro avisa.
 - **DNS resiliente** (AdGuard con 2 upstreams + fallback).

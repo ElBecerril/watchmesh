@@ -9,7 +9,7 @@
 > `EnvironmentFile` (SEC-7). Ver **seccion 21**. Esta biblia es la referencia tecnica completa
 > de la version publica.
 
-> **NOTA DE DESFASE:** el sistema vivo avanzo y esta biblia quedo rezagada. Cambios NO reflejados abajo: 6/6 camaras (cam4 cable gigabit, cam6 recableada); ntfy en el watchdog (RES-8); RES-4b monitoreo termico RPi5; rotacion SEC-1..9 + purga de historial; **dead-man's-switch CAPA 1** (RPi5 vigila Lugar 2+pve via `peer-watch.timer`, infra NUEVA tras un apagon regional); UPS por isla en evaluacion. La sitio 3 (pve) es un sitio INDEPENDIENTE, no el Lugar 2.
+> **NOTA DE DESFASE:** el sistema vivo avanzo y esta biblia quedo rezagada. Cambios NO reflejados abajo: 6/6 camaras (cam4 cable gigabit, cam6 recableada); ntfy en el watchdog (RES-8); RES-4b monitoreo termico RPi5; **dead-man's-switch CAPA 1** (RPi5 vigila Lugar 2+pve via `peer-watch.timer`, infra NUEVA tras un apagon regional); UPS por isla en evaluacion. La sitio 3 (pve) es un sitio INDEPENDIENTE, no el Lugar 2.
 
 ---
 
@@ -278,23 +278,23 @@ Resuelto con servicio systemd que espera hasta 60s a que `tailscale0` exista ant
 
 ```
 # Substream (detect + display RPi5)
-cam1:      rtsp://admin:@CREDENCIALES_REALES.md@192.0.2.40:554/cam/realmonitor?channel=1&subtype=1
-cam2:      rtsp://admin:@CREDENCIALES_REALES.md@192.0.2.40:554/cam/realmonitor?channel=2&subtype=1
-cam3:      rtsp://admin:@CREDENCIALES_REALES.md@192.0.2.40:554/cam/realmonitor?channel=3&subtype=1
-cam4:      rtsp://admin:@CREDENCIALES_REALES.md@192.0.2.30:554/stream0
-cam5:      rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5541/ch0_1.h264
-cam6:      rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch0_1.h264
+cam1:      rtsp://<USER>:<PASSWORD>@192.0.2.40:554/cam/realmonitor?channel=1&subtype=1
+cam2:      rtsp://<USER>:<PASSWORD>@192.0.2.40:554/cam/realmonitor?channel=2&subtype=1
+cam3:      rtsp://<USER>:<PASSWORD>@192.0.2.40:554/cam/realmonitor?channel=3&subtype=1
+cam4:      rtsp://<USER>:<PASSWORD>@192.0.2.30:554/stream0
+cam5:      rtsp://<USER>:<PASSWORD>@100.64.10.3:5541/ch0_1.h264
+cam6:      rtsp://<USER>:<PASSWORD>@100.64.10.3:5542/ch0_1.h264
 
 # Mainstream (record 2K)
-cam1_main: rtsp://admin:@CREDENCIALES_REALES.md@192.0.2.40:554/cam/realmonitor?channel=1&subtype=0
-cam2_main: rtsp://admin:@CREDENCIALES_REALES.md@192.0.2.40:554/cam/realmonitor?channel=2&subtype=0
-cam3_main: rtsp://admin:@CREDENCIALES_REALES.md@192.0.2.40:554/cam/realmonitor?channel=3&subtype=0
+cam1_main: rtsp://<USER>:<PASSWORD>@192.0.2.40:554/cam/realmonitor?channel=1&subtype=0
+cam2_main: rtsp://<USER>:<PASSWORD>@192.0.2.40:554/cam/realmonitor?channel=2&subtype=0
+cam3_main: rtsp://<USER>:<PASSWORD>@192.0.2.40:554/cam/realmonitor?channel=3&subtype=0
 cam4_main: ELIMINADO (cam4 usa single stream mainstream para detect+record)
-cam5_main: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5541/ch0_0.h264
-cam6_main: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch0_0.h264
+cam5_main: rtsp://<USER>:<PASSWORD>@100.64.10.3:5541/ch0_0.h264
+cam6_main: rtsp://<USER>:<PASSWORD>@100.64.10.3:5542/ch0_0.h264
 
 # Segundo lente (cam6_face - desactivado)
-cam6_face: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch1_1.h264
+cam6_face: rtsp://<USER>:<PASSWORD>@100.64.10.3:5542/ch1_1.h264
 ```
 
 ### ICSee - Notas importantes
@@ -313,33 +313,42 @@ cam6_face: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch1_1.h264
 
 ### Deteccion de objetos (8 objetos COCO)
 
-| Objeto | min_score | min_area | Notificacion |
-|---|---|---|---|
-| person | 0.62 | 700 | Inmediata |
-| car | 0.55 | 1000 | Solo si detenido 60s+ |
-| motorcycle | 0.50 | 500 | - |
-| bicycle | 0.45 | 300 | - |
-| truck | 0.55 | 1500 | - |
-| bus | 0.55 | 2000 | - |
-| dog | 0.45 | 150 | Inmediata |
-| cat | 0.35 | 150 | Inmediata |
+Objetos rastreados: `person`, `car`, `motorcycle`, `bicycle`, `truck`, `bus`, `dog`, `cat`.
+
+Cada uno lleva dos filtros en Frigate:
+
+| Filtro | Que hace | Como ajustarlo |
+|---|---|---|
+| `min_score` | Confianza minima para aceptar la deteccion | Subirlo reduce falsos positivos y aumenta falsos negativos. Los objetos grandes y bien contrastados toleran valores altos; mascotas y objetos parciales necesitan valores mas bajos |
+| `min_area` | Area minima en px del bounding box | Filtra detecciones lejanas o espurias. **Depende de la resolucion de `detect` y del encuadre**, asi que no es portable entre instalaciones |
+
+> **Los valores concretos de este despliegue no se publican**: junto con la resolucion de
+> detect describen exactamente el umbral a partir del cual el sistema deja de registrar algo.
+> Calibra los tuyos con la vista de depuracion de Frigate sobre tus propios encuadres, y
+> revisalos cada vez que cambies la resolucion de `detect`.
 
 > Ampliado de 4 a 8 objetos en v4.6. motorcycle, bicycle, truck, bus agregados sin costo extra de Coral.
 
 ### Zonas configuradas
 
-| Camara | Zonas | Mascaras movimiento |
-|---|---|---|
-| cam1_nvr | banqueta, banqueta_2, estacionamiento, calle | 1 (timestamp OSD) |
-| cam2_nvr | calle, estacionamiento, banqueta_1, banqueta_2 | 1 (timestamp OSD) |
-| cam3_nvr | banqueta_1, banqueta_2, estacionamiento, calle | 1 (timestamp OSD) |
-| cam4_icsee | banqueta, banqueta_2, esquina, estacionamiento, calle | 2 (timestamp + arbol) |
-| cam5_remota | zona_1, calle, banqueta | 3 (timestamp + postes) |
-| cam6_remota | banqueta, estacionamiento, calle, calle_2 | 1 (timestamp OSD) |
+Cada camara define entre 3 y 5 **zonas** (poligonos donde un objeto detectado cuenta como
+evento) y una o mas **mascaras de movimiento** (regiones ignoradas por el detector de
+movimiento: normalmente el timestamp OSD y elementos que se mueven con el viento).
 
-**Total: 22 zonas, 9 mascaras de movimiento**
+> El reparto concreto de zonas y mascaras depende por completo del encuadre de cada
+> instalacion, y **describe el perimetro fisico del sitio**, asi que no se documenta aqui.
+> Definelas en la UI de Frigate (Settings → Mask & Zone Editor) sobre tus propios encuadres.
 
-> NOTA: Las zonas de cam1-3 necesitan recalibrarse. Fueron creadas con resolucion 352x240 y ahora el detect es 480x540. Las coordenadas son normalizadas (0-1) asi que DEBERIAN funcionar, pero el cambio de aspecto ratio puede afectar la precision.
+Criterios utiles al definirlas:
+
+- Una zona por area con **significado distinto de alerta** (p.ej. acceso propio vs via publica);
+  eso permite filtrar notificaciones por zona en lugar de por camara entera.
+- Enmascarar **siempre** el timestamp OSD: cambia cada segundo y dispara movimiento continuo.
+- Enmascarar vegetacion y elementos oscilantes; ojo, una mascara de movimiento es un **punto
+  ciego permanente**, asi que hazla lo mas pequena posible.
+- Al cambiar la resolucion de `detect`, revisa las zonas: las coordenadas son normalizadas
+  (0-1) y sobreviven al cambio, pero un cambio de **aspect ratio** deforma el poligono y
+  conviene recalibrar.
 
 ---
 
@@ -413,7 +422,7 @@ cam6_face: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch1_1.h264
 - **Objetos**: person, car, motorcycle, bicycle, truck, bus, dog, cat (8 objetos COCO)
 - **Inferencia Coral**: siempre 320x320, independiente de la resolucion detect
 - **CPU promedio Frigate**: ~15% (v5.2: Semantic Search off + optimizaciones previas). Host load ~0.7-1.5/4 cores
-- **RAM Frigate**: crece progresivamente (~1GB/dia con crash-loops activos, ~300MB/dia sin ellos). Restart semanal programado (dom 04:00). Watchdog v2.0 reduce restarts desactivando camaras en crash-loop
+- **RAM Frigate**: crece progresivamente (~1GB/dia con crash-loops activos, ~300MB/dia sin ellos). Restart semanal programado. Watchdog v2.0 reduce restarts desactivando camaras en crash-loop
 
 ### Semantic Search (v4.6 - DESACTIVADO v5.2)
 
@@ -440,7 +449,7 @@ cam6_face: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch1_1.h264
 - **Rostros entrenados**: PERSONA1 (4 muestras, confidence 1.0 en test)
 - **Rendimiento**: ~240-480ms por imagen, ~30s carga modelo al iniciar
 - **Endpoints API**: POST /recognize, POST /train/{name}, GET /faces, DELETE /faces/{name}, GET /health
-- **Autenticacion**: API key via header X-API-Key (key: @CREDENCIALES_REALES.md). Endpoints /health y GET /faces son publicos.
+- **Autenticacion**: API key via header X-API-Key (key: <PASSWORD>). Endpoints /health y GET /faces son publicos.
 - **Almacenamiento embeddings**: /data/faces en volumen Docker (face_data)
 - **Ventaja sobre Frigate builtin**: modelo buffalo_l (ArcFace R100) vs small, mejor calidad de recortes, sin consumo CPU en proxmox-lugar1 N95
 
@@ -449,7 +458,7 @@ cam6_face: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch1_1.h264
 - **Estado**: **DESACTIVADO** desde v4.5
 - **Provider**: Google Gemini
 - **Modelo**: gemini-2.5-flash-lite
-- **API Key**: @CREDENCIALES_REALES.md
+- **API Key**: <PASSWORD>
 - **Cuota real**: 20 RPD (NO 1000 como documenta Google)
 - **Motivo desactivacion**: Tormenta de retries 429 (1311+ retries) causo deadlock de Frigate y cuelgue total del sistema
 - **Re-habilitar**: Solo si se confirma cuota suficiente, con limites estrictos
@@ -516,11 +525,11 @@ cam6_face: rtsp://admin:@CREDENCIALES_REALES.md@100.64.10.3:5542/ch1_1.h264
 | person | Alerta inmediata con snapshot | 60s por camara |
 | dog | Alerta inmediata con snapshot | 60s por camara |
 | cat | Alerta inmediata con snapshot | 60s por camara |
-| car | Solo si detenido 60s+ | 60s por camara |
+| car | Solo si permanece detenido (`CAR_STATIONARY_THRESHOLD`) | `COOLDOWN_SECONDS` por camara |
 
 ### Resumen diario
 
-- Se envia automaticamente a las 23:00
+- Se envia automaticamente una vez al dia (hora configurable con `DAILY_SUMMARY_HOUR`)
 - Incluye: total personas/coches/animales, personas por camara, horas pico
 - Thread con recovery automatico si falla
 
@@ -659,7 +668,7 @@ Todas via go2rtc restream: `rtsp://192.0.2.20:8554/camX`
 - **Deteccion congelamiento**: CPU < 2.0% por 3 ciclos consecutivos
 - **Backoff exponencial**: 1min (3+ fallos), 5min (6+), 15min (10+)
 - **Reinicio periodico**: cada 4 horas
-- **Ventana mantenimiento**: 06:28-06:33 (reinicio router, checks suprimidos)
+- **Ventana mantenimiento**: franja configurable (`MAINTENANCE_START`/`MAINTENANCE_END`); durante el reinicio programado del router se suprimen los checks
 - **VPN check**: cada 2 minutos, auto-reinicia cam5/cam6 cuando VPN restaura
 - **Limpieza huerfanos**: cada ciclo mata procesos mpv sin camara asignada
 - **Limpieza duplicados**: detecta y mata procesos duplicados por camara (mantiene el mas reciente)
@@ -751,15 +760,15 @@ Ver la estructura del repo en el `README.md` de la raiz.
 
 ## 11. CREDENCIALES
 
-> **MODELO DE SECRETOS (SEC-5/6/7):** la **fuente unica** de secretos reales es
-> `CREDENCIALES_REALES.md` (gitignored, NO se versiona). Todos los archivos versionados
-> (`session_context.json`, esta biblia, scripts) usan el placeholder `@CREDENCIALES_REALES.md` o
-> leen de **variables de entorno**. Los scripts ya NO llevan secretos hardcodeados: los toman de
-> `/etc/vigilancia/vigilancia.env` (chmod 600, fuera del repo) via `EnvironmentFile=` en las units
-> systemd. Plantilla: `.env.example` (+ `cam_urls.env.example` para el RPi5). Hay un **hook
-> pre-commit anti-secretos** (`scripts/git-hooks/`). El repo es PRIVADO. Las credenciales marcadas
-> **(ROTAR)** estuvieron en el historial git y siguen pendientes de rotacion (SEC-1..4) → bloquean
-> la purga del historial (SEC-9).
+> **MODELO DE SECRETOS (SEC-5/6/7):** ningun secreto real vive en el repo. Los archivos
+> versionados usan los placeholders `<USER>` / `<PASSWORD>` o leen de **variables de entorno**.
+> Los scripts no llevan secretos hardcodeados: los toman de `/etc/vigilancia/vigilancia.env`
+> (chmod 600, fuera del repo) via `EnvironmentFile=` en las units systemd. Plantilla:
+> `.env.example` (+ `cam_urls.env.example` para el visor y `peerwatch.env.example` para el
+> dead-man's-switch). Hay un **hook pre-commit anti-secretos** en `scripts/git-hooks/`:
+> instalalo con `git config core.hooksPath scripts/git-hooks` antes del primer commit.
+>
+> Las tablas de abajo documentan **que credenciales existen y donde se usan**, no sus valores.
 >
 > **Deploy del env (estado s3):** creado `/etc/vigilancia/vigilancia.env` en el **HOST
 > proxmox-lugar1** (consumido por backup + watchdog). **Falta** crearlo en el **LXC 200** (lo necesitan
@@ -770,19 +779,19 @@ Ver la estructura del repo en el `README.md` de la raiz.
 
 | Dispositivo | Usuario | Password | IP | Nota acceso |
 |---|---|---|---|---|
-| proxmox-lugar1 (Proxmox) | root | @CREDENCIALES_REALES.md | 192.0.2.10 / 100.64.10.2 | acepta password (no browser); `sshpass`/`pct exec 200` |
-| LXC 200 | root | @CREDENCIALES_REALES.md | 192.0.2.20 | SSH directo RECHAZADO → `pct exec 200 -- <cmd>` desde proxmox-lugar1 |
-| RPi5 | pi | @CREDENCIALES_REALES.md | 192.0.2.51 (eth0) / 100.64.10.1 | Tailscale SSH pide **auth interactiva por URL** (tambien Linux); aprobar y queda cacheado |
-| Servidor pve (Xeon) | root | @CREDENCIALES_REALES.md | 100.64.10.6 | key-auth; destino del backup (RES-2). Si se reinstala cambia host key |
-| ~~VM 110 (face-recog)~~ | ~~root~~ | — | ~~198.51.100.50 / 100.64.10.5~~ | **DESMANTELADA** (VM borrada, ver seccion 2) |
+| proxmox-lugar1 (Proxmox) | <USER> | <PASSWORD> | 192.0.2.10 / 100.64.10.2 | acepta password (no browser); `sshpass`/`pct exec 200` |
+| LXC 200 | <USER> | <PASSWORD> | 192.0.2.20 | SSH directo RECHAZADO → `pct exec 200 -- <cmd>` desde proxmox-lugar1 |
+| RPi5 | <USER> | <PASSWORD> | 192.0.2.51 (eth0) / 100.64.10.1 | Tailscale SSH pide **auth interactiva por URL** (tambien Linux); aprobar y queda cacheado |
+| Servidor pve (Xeon) | <USER> | <PASSWORD> | 100.64.10.6 | key-auth; destino del backup (RES-2). Si se reinstala cambia host key |
+| ~~VM 110 (face-recog)~~ | ~~&lt;USER&gt;~~ | — | ~~198.51.100.50 / 100.64.10.5~~ | **DESMANTELADA** (VM borrada, ver seccion 2) |
 
 ### Servicios Web
 
 | Servicio | URL | Usuario | Password |
 |---|---|---|---|
-| Proxmox | https://192.0.2.10:8006 | root | @CREDENCIALES_REALES.md |
-| Frigate | http://192.0.2.20:5000 | admin | @CREDENCIALES_REALES.md |
-| Grafana | http://192.0.2.20:3000 | admin | @CREDENCIALES_REALES.md |
+| Proxmox | https://192.0.2.10:8006 | <USER> | <PASSWORD> |
+| Frigate | http://192.0.2.20:5000 | <USER> | <PASSWORD> |
+| Grafana | http://192.0.2.20:3000 | <USER> | <PASSWORD> |
 | go2rtc | http://192.0.2.20:1984 | - | - |
 | Prometheus | http://192.0.2.20:9090 | - | - |
 | InsightFace API | http://100.64.10.5:5050 | - | - |
@@ -791,18 +800,18 @@ Ver la estructura del repo en el `README.md` de la raiz.
 
 | Camara | Usuario | Password |
 |---|---|---|
-| NVR Dahua (cam1-4) | admin | @CREDENCIALES_REALES.md |
-| CAM5 (Lugar 2) | admin | @CREDENCIALES_REALES.md |
-| CAM6 (Lugar 2) | admin | @CREDENCIALES_REALES.md |
+| NVR Dahua (cam1-4) | <USER> | <PASSWORD> |
+| CAM5 (Lugar 2) | <USER> | <PASSWORD> |
+| CAM6 (Lugar 2) | <USER> | <PASSWORD> |
 
 ### APIs y Bots
 
 | Servicio | Token / Key |
 |---|---|
-| Telegram Bot (@tu_bot_de_telegram) | @CREDENCIALES_REALES.md |
+| Telegram Bot (@tu_bot_de_telegram) | <PASSWORD> |
 | Telegram Chat ID | <TELEGRAM_CHAT_ID> |
 | Telegram AUTHORIZED_IDS | {<TELEGRAM_CHAT_ID>} |
-| GenAI Gemini API Key | @CREDENCIALES_REALES.md |
+| GenAI Gemini API Key | <PASSWORD> |
 
 ---
 
@@ -834,10 +843,10 @@ pct exec 200 -- docker logs frigate -f
 pct exec 200 -- docker compose -f /opt/vigilancia/docker-compose.yml restart frigate
 
 # Stats via API
-curl -s -u admin:@CREDENCIALES_REALES.md http://192.0.2.20:5000/api/stats | python3 -m json.tool
+curl -s -u <USER>:<PASSWORD> http://192.0.2.20:5000/api/stats | python3 -m json.tool
 
 # Eventos de hoy
-curl -s -u admin:@CREDENCIALES_REALES.md "http://192.0.2.20:5000/api/events?limit=10" | python3 -m json.tool
+curl -s -u <USER>:<PASSWORD> "http://192.0.2.20:5000/api/events?limit=10" | python3 -m json.tool
 
 # Verificar Coral TPU
 pct exec 200 -- lsusb | grep 1a6e
@@ -1029,7 +1038,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 
 ### Apagon LUGAR1 + reboot loop RPi5
 - **Reboot loop RPi5 (RESUELTO)**: el RPi5 se reiniciaba cada 12-38min. Causa raiz: 3 capas de auto-reboot, la culpable real `temp_watchdog.service` ejecutaba `sudo reboot` si temp>=80°C, y con cooling subperformante + ola calor entraba en ciclo. **Las 3 capas estan NEUTRALIZADAS** (HW watchdog systemd `RuntimeWatchdogSec=0`, daemon watchdog disabled, temp-watchdog disabled). **NO reactivar.** `boot-forensics` captura cada arranque. El fix aguanto 22 dias hasta el apagon.
-- **Un apagon (CONFIRMADO)**: la luz se fue 2 veces en LUGAR1 → 2 SUSPECT_RESET del RPi5 (doble boot 4s = brownout) + reboot proxmox-lugar1 ~02:21. Todo auto-recupero. Secuela: RPi5 `throttled=0x50000` (under-voltage+throttling ocurrieron, no activos). **Vigilar** `vcgencmd get_throttled`; si under-voltage recurre sin apagon, revisar PSU. Considerar **UPS para LUGAR1** (RES-1).
+- **Un apagon (CONFIRMADO)**: la luz se fue 2 veces en LUGAR1 → 2 SUSPECT_RESET del RPi5 (doble boot 4s = brownout) + reboot de proxmox-lugar1. Todo auto-recupero. Secuela: RPi5 `throttled=0x50000` (under-voltage+throttling ocurrieron, no activos). **Vigilar** `vcgencmd get_throttled`; si under-voltage recurre sin apagon, revisar PSU. Considerar **UPS para LUGAR1** (RES-1).
 
 ### RPi5 cooling subperformante (PENDIENTE fisico)
 - **Problema**: delta termico ~45°C sobre ambiente (esperado 25-30°C). Fan max 3894 RPM (Active Cooler oficial llega a ~6000).
@@ -1044,7 +1053,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 
 - **Problema**: Frigate acumula RAM progresivamente. Medicion v5.5: ~300MB/dia. Medicion v5.6: ~1GB/dia (3x peor)
 - **Causa**: Memory leak en Frigate 0.17 amplificado por crash-loops ffmpeg. Cada restart ffmpeg leak memoria en Python (allocator no devuelve al OS). cam5+cam6 via Tailscale relay: 14K restarts/dia. cam4 RTSP intermitente: 3K restarts/dia. Total: 60K+ restarts/dia
-- **Solucion v5.5**: Cron `docker restart frigate` domingos 04:00 en LXC 200 + LXC RAM 8->12GB
+- **Solucion v5.5**: restart semanal de Frigate en LXC 200 + LXC RAM 8->12GB
 - **Solucion v5.6**: Watchdog v2.0 desactiva camaras en crash-loop (reduce restarts dramaticamente). Docker log rotation 50m x 3
 - **Sintoma watchdog**: check RAM falla porque `pct exec` timeout bajo presion de memoria -> SOS permanente
 
@@ -1215,7 +1224,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 
 ### Completados en v5.5
 
-- ~~Frigate memory leak 95%~~ - Restart manual + cron semanal dom 04:00
+- ~~Frigate memory leak 95%~~ - Restart manual + restart semanal programado
 - ~~LXC 200 RAM insuficiente~~ - Aumentado 8GB -> 12GB (pendiente restart LXC para aplicar)
 - ~~Watchdog SOS spam~~ - Resuelto con restart Frigate (RAM check ya pasa)
 - ~~BIBLIA desactualizada v4.9~~ - Actualizada a v5.5
@@ -1262,7 +1271,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 ### Prioridad ALTA
 
 1. **Deploy de servicios vivos corregidos** (watchdog/bot/counter/exporter) + env en LXC 200 — ver gotchas en seccion 21.
-2. **Rotar credenciales SEC-1..4** (Telegram/Gemini/Frigate/Grafana) → desbloquea SEC-9 (purga historial git).
+2. **Rotacion periodica de credenciales** (Telegram/Frigate/Grafana/camaras).
 3. **vzdump programado del CT 200 + ensayar restore** (RES-3).
 4. **Investigar cam5 caida tras restart Frigate** (RES-5: path directo/DERP; proxy proxy-lugar2 no entrega frames en frio).
 5. **Prueba de banco cam6** (12V) + decidir reemplazo.
@@ -1291,7 +1300,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 
 **Tracking de trayectoria entrada/salida**: Frigate NO hace tracking de identidad entre zonas. Para ReID se necesitaria modelo adicional que el N95 no soporta.
 
-**Conclusion**: Los conteos de trafico banqueta + coches estacionados + personas por zona/hora son datos solidos y confiables.
+**Conclusion**: Los conteos de trafico peatonal + vehiculos detenidos + personas por zona/hora son datos solidos y confiables.
 
 ---
 
@@ -1326,9 +1335,9 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 | — | v5.6.1 | Auditoria completa EN VIVO (0 cambios). VM110 confirmada BORRADA (no apagada). Un apagon confirmado (RPi5 throttled=0x50000). cam5 flapping. Repo: CLAUDE.md reestructurado, .gitignore snapshots. |
 | — | v5.6.2-repo | Auditoria multi-agente (4 areas) → 39 hallazgos. Repo (sin deploy): 17 bugs corregidos (nightly_backup destructor, check_coral ciego, SQLite WAL, bot auth from.id, dedup coches…), higiene de secretos (0 inline, env/EnvironmentFile, hook pre-commit), docs reconciliadas. |
 | — | v5.6.2-repo | DOC-3 resuelto (RPi5 .51=eth0/.52=wlan0). Creados RES-2/3/4b/8/9 (backup a pve, runbook, exporter temp RPi5, ntfy, systemd-timers). Diag remoto Lugar 2 (`diag_lugar2_cam.sh`): cam5 SANA, cam6 fallo fisico. |
-| **s3** | **v5.6.2** | **PRIMER DEPLOY supervisado (LUGAR1, LAN directa). Fundacion: `/etc/vigilancia/vigilancia.env` (host). RES-2: backup diario REAL a pve (1er backup 282M verificado sha256, timer 02:31 Persistent). RES-9: cron Frigate → systemd-timer (LXC). Servicios vivos intactos. Ver seccion 21.** |
+| **s3** | **v5.6.2** | **PRIMER DEPLOY supervisado (LUGAR1, LAN directa). Fundacion: `/etc/vigilancia/vigilancia.env` (host). RES-2: backup diario REAL a pve (1er backup 282M verificado sha256, timer nocturno Persistent). RES-9: cron Frigate → systemd-timer (LXC). Servicios vivos intactos. Ver seccion 21.** |
 | — | v5.5.1 | Auditoria post-apagon OK (10/10 subsistemas auto-recuperaron). PTZ patrol descubierto activo y eliminado completamente (3 crons + 2 scripts + 1 service en RPi5) |
-| — | v5.5 | Auditoria completa: Frigate memory leak 7.6GB/8GB (95%) tras 20 dias uptime. Restart Frigate (1.6GB). LXC RAM 8->12GB. Cron restart semanal dom 04:00. Watchdog SOS resuelto (8/8 OK) |
+| — | v5.5 | Auditoria completa: Frigate memory leak 7.6GB/8GB (95%) tras 20 dias uptime. Restart Frigate (1.6GB). LXC RAM 8->12GB. Restart semanal programado. Watchdog SOS resuelto (8/8 OK) |
 
 ---
 
@@ -1360,7 +1369,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 2. **Disco LXC 200**: limpieza 82%->53% + retencion reducida (motion 1d, detections/alerts 5d)
 3. **matrix_camaras.sh VPN check**: corregido para pingar 100.64.10.3 (proxy-lugar2 Tailscale) en vez de 192.0.2.20
 4. **Coral TPU autosuspend**: udev rule `/etc/udev/rules.d/99-coral-tpu.rules` con autosuspend_delay_ms=-1
-5. **API key face_api**: endpoints /recognize, /train, /delete protegidos con X-API-Key header (key: @CREDENCIALES_REALES.md)
+5. **API key face_api**: endpoints /recognize, /train, /delete protegidos con X-API-Key header (key: <PASSWORD>)
 
 ---
 
@@ -1380,7 +1389,7 @@ people_counter.py
         |
         +---> Prometheus metrics (:9102) --> Grafana (4 paneles)
         |
-        +---> Telegram reports (diario 23:00, semanal dom 22:00, mensual)
+        +---> Telegram reports (diario, semanal, mensual)
 ```
 
 ### Script: `scripts/people_counter.py`
@@ -1396,8 +1405,8 @@ people_counter.py
 
 | Camara | Zonas filtradas | Relevancia |
 |---|---|---|
-| cam5_remota | zona_1, banqueta | **ALTA** - frente al Lugar 2 |
-| cam6_remota | banqueta, estacionamiento | **ALTA** - acceso Lugar 2 |
+| cam5_remota | (definir en `CAMERA_ZONES`) | **ALTA** |
+| cam6_remota | (definir en `CAMERA_ZONES`) | **ALTA** |
 | cam1_nvr | todas (sin filtro) | MEDIA |
 | cam2_nvr | todas (sin filtro) | MEDIA |
 | cam3_nvr | todas (sin filtro) | MEDIA |
@@ -1429,9 +1438,9 @@ people_counter.py
 
 | Reporte | Horario | Contenido |
 |---|---|---|
-| Diario | 23:00 todos los dias | Total por camara, hora pico, top zonas |
-| Semanal | Domingos 22:00 | Total semanal, promedio diario, dia mas activo |
-| Mensual | Ultimo dia del mes 22:00 | Total mensual, comparativa, tendencias |
+| Diario | Una vez al dia (`DAILY_SUMMARY_HOUR`) | Total por camara, hora pico, top zonas |
+| Semanal | Una vez por semana | Total semanal, promedio diario, dia mas activo |
+| Mensual | Ultimo dia del mes | Total mensual, comparativa, tendencias |
 
 ---
 
@@ -1583,7 +1592,8 @@ los videos (eso seria `nightly_backup.sh` → HDD, aun pendiente de hardware).
 real: **282M** (people_counter.db 23M + frigate.db 260M + config), verificado
 independientemente con `sha256sum -c` en pve.
 
-**Programacion**: `backup-to-pve.timer` → diario **02:31** (`OnCalendar=02:30` + `RandomizedDelaySec=120`),
+**Programacion**: `backup-to-pve.timer` → diario en horario nocturno (`OnCalendar` + `RandomizedDelaySec`
+para que la hora exacta de disparo no sea predecible; ajusta la hora en tu despliegue),
 `Persistent=true`. Lee secretos de `/etc/vigilancia/vigilancia.env` (`EnvironmentFile=`).
 
 **Dependencias de infra (si el backup falla, revisar aqui):**
@@ -1593,7 +1603,7 @@ independientemente con `sha256sum -c` en pve.
 - **`sqlite3` instalado en el LXC 200** (si falta, cae a copia en frio, menos segura).
 - **Path Tailscale proxmox-lugar1→pve se enfria si idle**: el ICMP NO lo despierta, un TCP connect si. El
   script hace warmup (`tailscale ping`) + 5 reintentos en el preflight (clave para el disparo
-  desatendido de las 02:31).
+  desatendido nocturno).
 - Log: `/var/log/backup_to_pve.log` en proxmox-lugar1. Prueba manual: `--dry-run`.
 
 ### RES-9 — systemd-timers Persistent (reemplazan crons)
@@ -1603,7 +1613,7 @@ disparo (apagon / NTP sin sincronizar) en vez de perderlo.
 
 | Unit | Donde | Hace | Reemplaza | Estado |
 |------|-------|------|-----------|--------|
-| `backup-to-pve.timer` | host proxmox-lugar1 | backup 02:31 | — (nuevo) | ✅ activo |
+| `backup-to-pve.timer` | host proxmox-lugar1 | backup nocturno diario | — (nuevo) | ✅ activo |
 | `frigate-weekly-restart.timer` | LXC 200 | `docker restart frigate` dom 04:00 (memory leak) | cron `0 4 * * 0` | ✅ activo, **cron eliminado** |
 | `rpi5-temp-exporter.timer` | RPi5 | temp/throttled → node_exporter cada 60s | — (nuevo) | ◐ pendiente (requiere RPi5) |
 
@@ -1654,9 +1664,8 @@ abierto" o "proxy OK" NO prueban que la camara viva; el ping a su IP local y el 
 ### Pendientes de resiliencia (orden sugerido)
 
 1. **Deploy de servicios vivos corregidos** (watchdog/bot/counter/exporter) + env en LXC 200.
-2. **Rotar credenciales SEC-1..4** (Telegram, Gemini, Frigate, Grafana) → desbloquea SEC-9 (purga
-   de historial git). El env desplegado usa las credenciales ACTUALES; tras rotar, actualizar
-   `CREDENCIALES_REALES.md` y el env.
+2. **Rotacion periodica de credenciales** (Telegram, Frigate, Grafana, camaras); tras rotar,
+   actualizar el gestor de secretos y `/etc/vigilancia/vigilancia.env`.
 3. **vzdump CT 200 + ensayo de restore** (RES-3).
 4. **RES-4b + cam_urls.env en RPi5** (requiere aprobar la URL interactiva de Tailscale).
 5. **`NTFY_URL`** para el segundo canal (RES-8).

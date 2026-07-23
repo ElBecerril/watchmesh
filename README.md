@@ -53,7 +53,7 @@ la propia red del usuario, con acceso remoto cifrado vía Tailscale.
 | v5.3–v5.4 | Mini PC + RPi5 + Coral + Servidor Proxmox | Watchdog con crash-loop-guard vía MQTT (auto-desactiva cámaras con RTSP muerto) | Operativo |
 | v5.5–v5.5.1 | Mini PC + RPi5 + Coral + Servidor Proxmox | Fix de memory leak en Frigate, restart semanal programado, auditoría post-incidente | Operativo |
 | v5.6–v5.6.1 | Mini PC + RPi5 + Coral + Servidor Proxmox | Watchdog v2.0, neutralización de reboot-loop térmico (3 capas de auto-reboot en conflicto) | Operativo |
-| v5.8–v5.9 | Mini PC + RPi5 + Coral + Servidor Proxmox | Rotación de credenciales, historial git purgado, DNS resiliente, capa 1 de dead-man's-switch | Operativo |
+| v5.8–v5.9 | Mini PC + RPi5 + Coral + Servidor Proxmox | Rotación de credenciales, DNS resiliente, capa 1 de dead-man's-switch | Operativo |
 
 ## Arquitectura
 
@@ -168,9 +168,8 @@ se incluyen:
   se incluye aquí, este repo es solo la parte técnica.
 - **Exploraciones de producto** y notas de compras/hardware personal — documentos internos
   de planeación que no aportan valor como referencia técnica pública.
-- **Historial de git** — este repo se inicializó desde cero; no hereda el historial del
-  repo privado (que en algún momento tuvo secretos en commits antiguos, ya purgados ahí,
-  pero de todas formas no se reutiliza ese historial aquí).
+- **Historial de git** — este repo se inicializó desde cero y no hereda historial de ningún
+  otro repositorio.
 
 Lo que sí queda es la parte técnica reutilizable: scripts, configuración de ejemplo,
 arquitectura documentada y las lecciones de infraestructura aprendidas en meses de

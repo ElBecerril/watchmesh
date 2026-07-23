@@ -19,7 +19,7 @@
 | Datos de app | `/opt/vigilancia/` (config Frigate, `frigate.db`, `people_counter.db`, storage) |
 | Backups DB/config | servidor **pve** `100.64.10.6:/var/backups/vigilancia/<fecha>/` (RES-2) |
 | Backups vzdump | (definir destino — ver §6) |
-| Credenciales | `CREDENCIALES_REALES.md` (gitignored) |
+| Credenciales | Fuera del repo: `/etc/vigilancia/vigilancia.env` (chmod 600) + tu gestor de secretos |
 
 Puertos del LXC 200: 5000 (Frigate), 8554 (go2rtc RTSP), 8555 (WebRTC), 1984 (go2rtc API),
 1883 (MQTT), 3000 (Grafana), 9090 (Prometheus), 9101/9102 (exporters).

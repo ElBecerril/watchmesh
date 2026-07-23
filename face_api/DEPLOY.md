@@ -87,7 +87,7 @@ RestartSec=10
 Environment=MQTT_HOST=127.0.0.1
 Environment=FRIGATE_URL=http://127.0.0.1:5000
 Environment=FRIGATE_USER=admin
-Environment=FRIGATE_PASS=@CREDENCIALES_REALES.md
+Environment=FRIGATE_PASS=<PASSWORD>
 Environment=FACE_API_URL=http://<TAILSCALE_IP_VM110>:5050
 Environment=COOLDOWN_SECONDS=30
 Environment=MIN_CONFIDENCE=0.45

@@ -25,7 +25,7 @@ Crear un sistema de monitoreo centralizado que permita visualizar en una sola pa
 - [x] **Detección de ventanas encimadas** con auto-corrección
 - [x] **Validación de dependencias** al inicio del script
 - [x] **VPN check** con backoff exponencial para cámaras remotas
-- [x] **Ventana de mantenimiento** 06:28-06:33 (reinicio router)
+- [x] **Ventana de mantenimiento** configurable (reinicio programado del router)
 - [x] **Limpieza de procesos huérfanos** automática cada ciclo
 
 > **Nota (v4.0+):** Desde la v4.0, el RPi5 ya NO se conecta directamente a las camaras. El Mini PC proxmox-lugar1 (Proxmox) es el unico consumidor RTSP. El RPi5 consume streams restreameados via go2rtc (`rtsp://192.0.2.20:8554/camX`). Ver README.md principal para la arquitectura completa.
@@ -109,7 +109,7 @@ rtsp://usuario:password@IP_CAMARA/ch0_1.h264
 | **Backoff exponencial** | 1min(3+), 5min(6+), 15min(10+ fallos) por cámara |
 | **CPU Check** | Detecta streams congelados (<2.0% CPU por 90s) |
 | **Network Monitor** | Detecta caída de red (ping -c 3) y reinicia al reconectar |
-| **Ventana mantenimiento** | 06:28-06:33: suprime CHECK 3-6 durante reinicio del router |
+| **Ventana mantenimiento** | Franja configurable: suprime CHECK 3-6 durante el reinicio del router |
 | **Limpieza huérfanos** | Mata procesos mpv que no corresponden a ninguna cámara |
 | **CAM4 fix** | Args especiales con --untimed para evitar stalls RTSP |
 | **Reinicio Periódico** | Reinicio preventivo general cada 4 horas |
@@ -128,7 +128,7 @@ rtsp://usuario:password@IP_CAMARA/ch0_1.h264
 │    Huérfanos      → Mata procesos mpv sin cámara asignada    │
 │    (cada ciclo)     Previene acumulación (7/6 → 6/6)         │
 ├──────────────────────────────────────────────────────────────┤
-│ 0. Mantenimiento  → 06:28-06:33: CHECK 3-6 suprimidos        │
+│ 0. Mantenimiento  → Ventana configurable: CHECK 3-6 supr.    │
 │                     Evita cascada por reinicio del router     │
 ├──────────────────────────────────────────────────────────────┤
 │ 1. Network Mon    → Ping -c 3 al router (evita falsos +)     │
@@ -375,7 +375,7 @@ Ver la estructura del repo en el `README.md` de la raiz.
 - **Solución viable:** Toggle de audio individual o usar app móvil ICSee para hablar
 
 ### Desconexión de Red WiFi
-- La red WiFi puede caer momentáneamente (visto a las 06:31)
+- La red WiFi puede caer momentáneamente
 - El watchdog v2.4 detecta esto y reinicia cámaras al reconectar
 - **Importante:** La PC gateway del Lugar 2 debe tener autologin habilitado
 
@@ -404,9 +404,9 @@ Ver la estructura del repo en el `README.md` de la raiz.
 - **Causa:** Faltaba `--untimed` en MPV_ARGS_CAM4. Sin este flag, mpv sincroniza con el reloj RTSP causando stalls.
 - **Solución:** Agregar `--untimed`, cambiar `--cache=no`, reducir buffers.
 
-**Problema 2:** Cascada de reinicios cada día a las 06:30.
-- **Causa:** El router reinicia a las 06:30 (~28s de caída). CHECK 3-6 disparan individualmente.
-- **Solución:** Ventana de mantenimiento 06:28-06:33 que suprime CHECK 3-6. CHECK 1 (red) maneja la reconexión correctamente con full_restart.
+**Problema 2:** Cascada de reinicios diaria a la misma hora.
+- **Causa:** El router hace un reinicio programado diario (~30s de caída). CHECK 3-6 disparan individualmente.
+- **Solución:** Ventana de mantenimiento configurable (`MAINTENANCE_START`/`MAINTENANCE_END`) que suprime CHECK 3-6 durante esa franja. CHECK 1 (red) maneja la reconexión correctamente con full_restart.
 
 **Problema 3:** Consistentemente 7 procesos mpv cuando deberían ser 6.
 - **Causa:** Procesos zombie que escapan al `pkill -f "title=$title"`.
@@ -471,11 +471,11 @@ done
 
 **Timeline del bug:**
 ```
-07:06:32 - Sistema arranca
-07:07:00 - Script cámaras INICIA (muy pronto!)
-07:07:04 - CAM1 intenta abrir ventana
-07:08:XX - labwc (compositor) INICIA ← después del script
-07:08:59 - CAM2 abre (~2 min delay)
+T+00:00 - Sistema arranca
+T+00:28 - Script cámaras INICIA (muy pronto!)
+T+00:32 - CAM1 intenta abrir ventana
+T+01:XX - labwc (compositor) INICIA ← después del script
+T+02:27 - CAM2 abre (~2 min delay)
 ```
 
 **Solución:** Modificar `matrix_camaras_autostart.sh` para:
