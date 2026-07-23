@@ -1,11 +1,12 @@
 # Runbook — Recuperación del LXC 200 (vigilancia) tras desastre
 
-> **RES-3.** El proxmox-lugar1 es un **SPOF total**: si muere el host o se corrompe el LXC 200,
-> se cae Frigate + go2rtc + Coral + Grafana + Prometheus + people_counter de golpe.
-> Este runbook lleva de "LXC 200 perdido" a "operativo" paso a paso.
+> **RES-3.** El host que concentra Frigate + go2rtc + Coral + Grafana + Prometheus +
+> people_counter es, por diseño, el punto de fallo más crítico: si muere el host o se corrompe
+> el contenedor, se cae todo de golpe. Este runbook lleva de "LXC 200 perdido" a "operativo"
+> paso a paso.
 >
-> **Estado:** La **prueba de restore real está PENDIENTE** (👤) —
-> ver §6. Un runbook no probado no es un plan de recuperación.
+> **Un runbook no probado no es un plan de recuperación** — ver §6: ensáyalo antes de
+> necesitarlo, y anota tu RTO real.
 
 ---
 
@@ -107,8 +108,9 @@ curl -s http://192.0.2.20:1984/api/streams             # go2rtc: ver consumidore
 pct exec 200 -- mosquitto_sub -t 'frigate/#' -C 3 -W 5     # MQTT fluye
 ```
 
-cam6_remota debe quedar **OFF** (watchdog la fuerza, cable UV). Si cam5/cam6 no llegan,
-revisar NAT (§5).
+Cualquier cámara que el watchdog haya forzado a **OFF** por crash-loop seguirá desactivada
+tras el restore: revisar `CAMS_NO_AUTO_RECOVERY` antes de dar por cerrada la recuperación.
+Si las cámaras remotas no llegan, revisar NAT (§5).
 
 ---
 
@@ -126,17 +128,18 @@ Si falla: `systemctl restart nat-tailscale` (espera a `tailscale0`, usa `-C` ant
 
 ---
 
-## 6. PENDIENTE — probar el restore (👤)
+## 6. Ensayo del restore (obligatorio)
 
-Este runbook **no está validado**. Para cerrarlo:
+Un runbook solo cuenta como plan de recuperación después de ejecutarse en seco al menos una
+vez. Para validarlo:
 
-1. **Definir y automatizar el vzdump del LXC 200**: hoy no hay constancia de un vzdump
-   programado. Crear backup Proxmox (`Datacenter → Backup`) del CT 200 a un storage que
-   sobreviva a la muerte del proxmox-lugar1 (NAS, pve, o el HDD de RES-2). Sin esto, §3 no aplica.
+1. **Automatizar el vzdump del LXC 200**: backup Proxmox (`Datacenter → Backup`) del CT 200 a
+   un storage que sobreviva a la muerte del host principal (NAS, tercer nodo, o el HDD de
+   RES-2). Sin esto, §3 no aplica.
 2. **Ensayar un restore** a un CT de prueba (id 299) desde el último vzdump y arrancarlo
    sin tocar el 200 productivo. Medir cuánto tarda y anotarlo aquí.
 3. Verificar que el backup de pve (RES-2) contiene `people_counter.db` + `config.yml` y que
    abren (`sqlite3 people_counter.db 'PRAGMA integrity_check;'`).
 4. Anotar el **RTO real** (tiempo hasta operativo) observado en el ensayo.
 
-> Una vez ensayado, quitar el banner "PENDIENTE" del §6 y de la cabecera.
+> Repetir el ensayo tras cualquier cambio de versión de Proxmox o de la estructura del backup.

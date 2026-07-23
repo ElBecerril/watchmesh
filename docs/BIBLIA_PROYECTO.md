@@ -9,8 +9,6 @@
 > `EnvironmentFile` (SEC-7). Ver **seccion 21**. Esta biblia es la referencia tecnica completa
 > de la version publica.
 
-> **NOTA DE DESFASE:** el sistema vivo avanzo y esta biblia quedo rezagada. Cambios NO reflejados abajo: 6/6 camaras (cam4 cable gigabit, cam6 recableada); ntfy en el watchdog (RES-8); RES-4b monitoreo termico RPi5; **dead-man's-switch CAPA 1** (RPi5 vigila Lugar 2+pve via `peer-watch.timer`, infra NUEVA tras un apagon regional); UPS por isla en evaluacion. La sitio 3 (pve) es un sitio INDEPENDIENTE, no el Lugar 2.
-
 ---
 
 ## INDICE
@@ -30,7 +28,7 @@
 13. [Cambio de Red](#13-cambio-de-red)
 14. [Problemas Conocidos y Soluciones](#14-problemas-conocidos-y-soluciones)
 15. [Lecciones Aprendidas](#15-lecciones-aprendidas)
-16. [Pendientes y Roadmap](#16-pendientes-y-roadmap)
+16. [Historial de cierres y Roadmap](#16-historial-de-cierres-y-roadmap)
 17. [Historial de Versiones](#17-historial-de-versiones)
 18. [Auditoria de Calidad y Buenas Practicas](#18-auditoria-de-calidad-y-buenas-practicas)
 19. [Contador de Personas - Analisis de Trafico Peatonal](#19-contador-de-personas---analisis-de-trafico-peatonal)
@@ -1025,24 +1023,24 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 - **Causa**: ICSee cam4 solo soporta 1 conexion RTSP simultanea (diferente a cam5/cam6)
 - **Solucion**: Consolidado a single stream mainstream (2560x1440) para detect+record. cam4_main eliminado de go2rtc
 
-### cam5 inestable tras restart (PENDIENTE — es flapping de software, NO cable)
+### Camara remota inestable tras un restart del detector (flapping de software, NO cable)
 - **Problema**: cam5 cae tras cada restart de Frigate. Proxy proxy-lugar2 no entrega frames validos en frio
 - **Diag remoto**: `scripts/diag_lugar2_cam.sh` la confirmo **SANA** (ping 198.51.100.30 OK, ffprobe HEVC 800x448@25fps). NO es cable ni camara muerta: es flapping de software (relay Tailscale dfw + el proxy no re-emite keyframe en frio). Cubierto por el watchdog.
-- **Solucion pendiente (RES-5)**: path directo / DERP propio en pve; reconexion robusta en go2rtc; o smart-plug para reboot del proxy
+- **Solucion (RES-5)**: path directo / DERP propio en el nodo remoto; reconexion robusta en go2rtc; o smart-plug para power-cycle del proxy. Leccion: el watchdog debe cubrir la ventana entre el restart del detector y la primera reconexion valida
 
-### cam6_remota offline — fallo FISICO (REABIERTO)
+### Camara remota offline — diagnostico de fallo FISICO
 - **Problema**: cam6 (198.51.100.40) totalmente offline en su LAN local. Forzada OFF via `CAMS_NO_AUTO_RECOVERY`.
 - **Diag remoto** (`diag_lugar2_cam.sh`): capa fisica caida — ping a 198.51.100.40 NO responde, pero el canary 198.51.100.30 SI (hay ruta por subnet-routing de Tailscale; la camara esta caida, no la red). ffprobe = Invalid data.
 - **Hipotesis REABIERTA**: reporte in-situ del LED del eliminador encendido **pero sin speech "system starting app"**. Si cam6 tiene eliminador DC propio (RJ45 solo datos), una camara con corriente arrancaria y hablaria aunque el cable de red este cortado → apunta a **alimentacion/camara muerta**, no solo al cable RJ45 degradado por UV (hipotesis original v5.6).
-- **Decidir en sitio**: PoE vs eliminador DC. **Prueba de banco con 12V conocido-bueno** separa camara-muerta de cable. Reemplazo candidato: Dahua bullet 4MP.
+- **Como cerrarlo**: PoE vs eliminador DC. Una **prueba de banco con 12V conocido-bueno** separa camara-muerta de cable cortado, sin desmontar nada mas.
 
 ### Apagon LUGAR1 + reboot loop RPi5
 - **Reboot loop RPi5 (RESUELTO)**: el RPi5 se reiniciaba cada 12-38min. Causa raiz: 3 capas de auto-reboot, la culpable real `temp_watchdog.service` ejecutaba `sudo reboot` si temp>=80°C, y con cooling subperformante + ola calor entraba en ciclo. **Las 3 capas estan NEUTRALIZADAS** (HW watchdog systemd `RuntimeWatchdogSec=0`, daemon watchdog disabled, temp-watchdog disabled). **NO reactivar.** `boot-forensics` captura cada arranque. El fix aguanto 22 dias hasta el apagon.
-- **Un apagon (CONFIRMADO)**: la luz se fue 2 veces en LUGAR1 → 2 SUSPECT_RESET del RPi5 (doble boot 4s = brownout) + reboot de proxmox-lugar1. Todo auto-recupero. Secuela: RPi5 `throttled=0x50000` (under-voltage+throttling ocurrieron, no activos). **Vigilar** `vcgencmd get_throttled`; si under-voltage recurre sin apagon, revisar PSU. Considerar **UPS para LUGAR1** (RES-1).
+- **Un apagon (CONFIRMADO)**: la luz se fue 2 veces en LUGAR1 → 2 SUSPECT_RESET del RPi5 (doble boot 4s = brownout) + reboot de proxmox-lugar1. Todo auto-recupero. Secuela: RPi5 `throttled=0x50000` (under-voltage+throttling ocurrieron, no activos). **Vigilar** `vcgencmd get_throttled`; si under-voltage recurre sin que haya habido corte de luz, revisar la PSU. Con UPS por isla (RES-1) este escenario no llega al equipo.
 
-### RPi5 cooling subperformante (PENDIENTE fisico)
+### Cooling subperformante del visor
 - **Problema**: delta termico ~45°C sobre ambiente (esperado 25-30°C). Fan max 3894 RPM (Active Cooler oficial llega a ~6000).
-- **Solucion pendiente**: instalar Active Cooler oficial Pi5 + limpiar polvo del disipador + reaplicar pasta termica. Mientras tanto, el kernel controla el fan por trip points (50/60/67.5/75°C).
+- **Solucion**: Active Cooler oficial Pi5 + disipador limpio + pasta termica en buen estado. El kernel controla el fan por trip points (50/60/67.5/75°C), pero un cooling subdimensionado los alcanza demasiado pronto.
 
 ### Disco huerfano post-restart (v5.0 - RESUELTO)
 - **Problema**: Disco LXC subio a 82% por grabaciones huerfanas tras restart de Frigate
@@ -1091,11 +1089,11 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 - **Problema**: A 5fps con 7 camaras, Coral llega al 97% y empieza a skipear
 - **Solucion**: Reducido a 3fps. Coral al ~55% con margen del ~45%.
 
-### Zonas/mascaras cam1-3 posiblemente imprecisas
+### Zonas/mascaras imprecisas tras cambiar la resolucion de detect
 
-- **Problema**: Se crearon con resolucion 352x240, ahora detect es 480x540
-- **Causa**: Cambio de aspecto ratio puede afectar coordenadas normalizadas
-- **Solucion pendiente**: Recalibrar en Frigate UI
+- **Problema**: zonas creadas con una resolucion y un aspect ratio distintos de los actuales
+- **Causa**: las coordenadas son normalizadas (0-1) y sobreviven al cambio, pero el cambio de aspect ratio deforma el poligono
+- **Solucion**: recalibrar en la UI de Frigate despues de cada cambio de `detect`
 
 ### RPi5 watchdog duplicado (v4.4 - RESUELTO)
 
@@ -1169,7 +1167,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 - Resolucion detect afecta directamente la calidad: 800x448 muy bajo para rostros a distancia
 - cam6 detect reducido a 800x448 (v5.1): 1280x720 era para face recog, innecesario con bridge off
 - Vistas lejanas elevadas (cam4) son inutiles para face recog
-- Thresholds mas bajos (0.55/0.75) capturan mas rostros, pendiente verificar precision
+- Thresholds mas bajos capturan mas rostros a costa de precision; conviene medir antes de bajarlos
 
 ### Telegram
 
@@ -1213,7 +1211,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 
 ---
 
-## 16. PENDIENTES Y ROADMAP
+## 16. HISTORIAL DE CIERRES Y ROADMAP
 
 ### Completados en v5.6
 
@@ -1225,7 +1223,7 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 ### Completados en v5.5
 
 - ~~Frigate memory leak 95%~~ - Restart manual + restart semanal programado
-- ~~LXC 200 RAM insuficiente~~ - Aumentado 8GB -> 12GB (pendiente restart LXC para aplicar)
+- ~~LXC 200 RAM insuficiente~~ - Aumentado 8GB -> 12GB (requiere restart del LXC para aplicar)
 - ~~Watchdog SOS spam~~ - Resuelto con restart Frigate (RAM check ya pasa)
 - ~~BIBLIA desactualizada v4.9~~ - Actualizada a v5.5
 
@@ -1268,31 +1266,29 @@ systemctl status nat-tailscale  # NAT Tailscale (solo en Lugar 1)
 - ~~Disco LXC 82%~~ - Limpiado a 53%
 - ~~API key face_api~~ - X-API-Key en endpoints protegidos
 
-### Prioridad ALTA
+### Lineas de trabajo abiertas (del diseno, no de un despliegue concreto)
 
-1. **Deploy de servicios vivos corregidos** (watchdog/bot/counter/exporter) + env en LXC 200 — ver gotchas en seccion 21.
-2. **Rotacion periodica de credenciales** (Telegram/Frigate/Grafana/camaras).
-3. **vzdump programado del CT 200 + ensayar restore** (RES-3).
-4. **Investigar cam5 caida tras restart Frigate** (RES-5: path directo/DERP; proxy proxy-lugar2 no entrega frames en frio).
-5. **Prueba de banco cam6** (12V) + decidir reemplazo.
-6. **Comprar case USB 3.0 SATA + HDD 1TB** para backup nocturno de VIDEOS (complementa el backup de DB/config a pve ya activo, RES-2).
+**Resiliencia**
 
-### Prioridad MEDIA
+- Ensayar periodicamente el restore completo, no solo el backup (RES-3).
+- Backup de las **grabaciones** a disco externo, ademas del de DB/config (RES-2 cubre lo segundo).
+- Ruta directa o DERP propio para el proxy RTSP remoto: tras un restart del detector, un proxy
+  que no entrega frames "en frio" deja la camara caida hasta la siguiente pasada del watchdog
+  (RES-5).
 
-3. **Entrenar rostros familiares** via /entrenar en Telegram + reactivar face-bridge
-4. **Recalibrar zonas/mascaras cam1-3** en Frigate UI (aspect ratio cambio a 480x540)
-5. **Camara dedicada face recog Lugar 2** (cam6_face insuficiente, rostros <40px)
-6. **Monitorear eficacia Watchdog v2.0** en proximos dias (verificar desactiva cams en crash-loop)
-7. **Probar EfficientDet-Lite1 en Coral** (mejor separacion grupos)
-8. **Evaluar upgrade Frigate 0.17.0 -> 0.17.1**
+**Deteccion**
 
-### Prioridad BAJA
+- Recalibrar zonas y mascaras despues de cualquier cambio de resolucion o aspect ratio de `detect`.
+- Un lente con encuadre dedicado si se quiere reconocimiento facial util: por debajo de ~40 px
+  de rostro el reconocimiento no aporta nada y solo gasta llamadas a la API.
+- Evaluar modelos alternativos en la Coral (p.ej. EfficientDet-Lite1) para separar mejor grupos
+  de personas.
 
-8. Actualizar frigate_config_example.yml a v5.1
-9. Agregar chat_ids familiares al bot Telegram
-10. Cambiar password Frigate
-11. Re-habilitar LPR cuando se resuelvan mascaras OSD
-12. Investigar cuota real Gemini 2.5 (20 vs 1000 RPD)
+**Operacion**
+
+- Rotacion periodica de credenciales de todos los servicios y camaras.
+- Mantener las imagenes Docker pinneadas y revisar upgrades de Frigate de forma controlada.
+- LPR: solo tiene sentido con un lente de zoom dedicado y las mascaras de OSD bien resueltas.
 
 ### Notas sobre metricas avanzadas
 
@@ -1470,7 +1466,7 @@ El watchdog corre en el **HOST proxmox-lugar1** (NO en LXC 200) para **sobrevivi
 
 > CAMS_IGNORE: [cam6_face] (v5.1)
 > Self-watchdog: SIGALRM 120s timeout, auto-restart via systemd (v5.0)
-> Self-watchdog: en SIGALRM hace flush del logger antes de `os._exit` (BUG-15, fix en repo, pendiente deploy)
+> Self-watchdog: en SIGALRM hace flush del logger antes de `os._exit` (BUG-15)
 
 #### Crash-loop-guard v2.0 (la clave de la estabilidad actual)
 
@@ -1487,12 +1483,11 @@ desactiva la **camara completa** (no solo detect) por 3 vias:
   contadores. **EXCEPCION — `CAMS_NO_AUTO_RECOVERY = {cam6_remota}`**: arranca disabled y NUNCA se
   reactiva sola (fallo fisico sospechado). Para revertir tras reparar cam6: vaciar el set,
   reiniciar el watchdog, MQTT ON.
-- **RES-7 (en repo, pendiente deploy)**: restart de Frigate por umbral de RSS, complementa el
-  restart semanal.
+- **RES-7**: restart de Frigate por umbral de RSS, complementa el restart semanal.
 
-> **Nota de drift:** la version DESPLEGADA del watchdog en el host es anterior a la
-> corregida en el repo (BUG-3/7/8/9/15 de la auditoria). El reemplazo del binario vivo
-> esta pendiente de una sesion de deploy supervisada (ver seccion 21).
+> **Leccion:** un watchdog corregido en el repo pero no desplegado no protege nada. Al tocar
+> el proceso que vigila el sistema, desplegar **uno por uno** con `.bak` + restart + verify:
+> es el unico componente cuyo fallo no se anuncia solo.
 
 | Check | Metodo | Umbral Warning | Umbral SOS |
 |---|---|---|---|
@@ -1556,29 +1551,38 @@ Hora: 14:40:12
 
 ## 21. RESILIENCIA, BACKUP Y RECUPERACION DE DESASTRES
 
-> Capa nacida de la auditoria de resiliencia y desplegada parcialmente en la
-> **sesion s3** (primer deploy supervisado). Aborda el hecho de que **proxmox-lugar1 es un SPOF total**
-> (cerebro IA, grabaciones, DB del contador) y hasta esta version no existia **ningun backup real**.
+> Capa nacida de una auditoria de resiliencia. El nodo que concentra deteccion, grabacion y
+> base de datos es, por diseno, el punto de fallo mas critico del sistema: esta seccion define
+> los controles que lo respaldan.
 
 ### Mapa de IDs de resiliencia (RES-*)
 
-| ID | Que | Estado | Donde |
-|----|-----|--------|-------|
-| RES-1 | UPS + BIOS "restore on AC = power on" | 👤 pendiente (compra UPS) | LUGAR1 |
-| **RES-2** | Backup diario DB/config a pve (`backup_to_pve.sh`) | ✅ **DESPLEGADO (s3)** | host proxmox-lugar1 → pve |
-| RES-3 | Runbook de recuperacion LXC 200 + ensayar restore | ◐ doc creada, prueba pendiente | `docs/RUNBOOK_recuperacion_LXC200.md` |
-| RES-4 / 4b | Cooling RPi5 + exportar temp/throttled a Prometheus | 👤 fisico + 🤖 `rpi5_node_textfile_temp.sh` (pendiente deploy) | RPi5 |
-| RES-5 | cam5 flapping: path directo / DERP propio | 👤 pendiente (infra) | Lugar 2/pve |
-| RES-6 | cam4 RTSP / cam6 cable | 👤 fisico | LUGAR1/Lugar 2 |
-| RES-7 | Restart Frigate por umbral RSS en el watchdog | 🤖 en repo, pendiente deploy | host proxmox-lugar1 |
-| RES-8 | Segundo canal de alertas (ntfy) | 🤖 `alert_notify.sh` desplegado; `NTFY_URL` por definir | host proxmox-lugar1 |
-| **RES-9** | Crons → systemd-timers Persistent | ✅ frigate-restart migrado; rpi5-temp pendiente | LXC 200 / RPi5 |
+Cada RES-* es un **control del diseno de referencia**. El estado de despliegue es propio de
+cada instalacion y se lleva fuera del repo.
+
+| ID | Control | Donde aplica |
+|----|---------|--------------|
+| RES-1 | UPS por isla (computo **y** red en el mismo UPS) + BIOS "restore on AC = power on" | Cada sitio |
+| RES-2 | Backup diario de DB/config a un tercer nodo (`backup_to_pve.sh`) | Host principal → nodo de backup |
+| RES-3 | Runbook de recuperacion del contenedor + ensayo periodico del restore | `docs/RUNBOOK_recuperacion_LXC200.md` |
+| RES-4 / 4b | Cooling activo del visor + exportar temp/throttled a Prometheus | Visor (RPi5) |
+| RES-5 | Ruta directa / DERP propio para el proxy RTSP remoto | Sitio remoto |
+| RES-6 | Cableado de camaras verificado (evitar failover silencioso a WiFi) | Todos los sitios |
+| RES-7 | Restart de Frigate por umbral de RSS en el watchdog | Host principal |
+| RES-8 | Segundo canal de alertas independiente (ntfy) | Host principal |
+| RES-9 | Crons → systemd-timers con `Persistent=true` | Todos los nodos |
+
+> **RES-1 no es opcional.** Sin UPS, un corte de luz derriba a la vez las camaras, la deteccion,
+> la grabacion **y** el canal de alertas: el fallo no se anuncia porque el que avisa cae con el
+> resto. Es la razon de ser del dead-man's-switch entre sitios (RES-8 + `peer_watch.sh`), que
+> cubre el caso en que una isla entera queda muda. Alimentar tambien el **router y el switch**:
+> un UPS que solo sostiene el computo deja el sitio vivo pero incomunicado.
 
 ### RES-2 — Backup diario a pve (DESPLEGADO)
 
 **Que respalda** (lo irreemplazable que NO se reconstruye): `people_counter.db` (historico del
 contador), `frigate.db` (estado/metadata de grabaciones) y `frigate.yml` (config). **NO** respalda
-los videos (eso seria `nightly_backup.sh` → HDD, aun pendiente de hardware).
+los videos: para eso esta `nightly_backup.sh` → HDD externo, que es un control aparte.
 
 **Como** (`scripts/backup_to_pve.sh`, corre en el **host proxmox-lugar1**):
 1. Snapshot consistente de cada SQLite con `sqlite3 .backup` dentro del LXC (seguro con WAL).
@@ -1613,9 +1617,9 @@ disparo (apagon / NTP sin sincronizar) en vez de perderlo.
 
 | Unit | Donde | Hace | Reemplaza | Estado |
 |------|-------|------|-----------|--------|
-| `backup-to-pve.timer` | host proxmox-lugar1 | backup nocturno diario | — (nuevo) | ✅ activo |
-| `frigate-weekly-restart.timer` | LXC 200 | `docker restart frigate` dom 04:00 (memory leak) | cron `0 4 * * 0` | ✅ activo, **cron eliminado** |
-| `rpi5-temp-exporter.timer` | RPi5 | temp/throttled → node_exporter cada 60s | — (nuevo) | ◐ pendiente (requiere RPi5) |
+| `backup-to-pve.timer` | host proxmox-lugar1 | backup nocturno diario | — (nuevo) | Host principal |
+| `frigate-weekly-restart.timer` | LXC 200 | `docker restart frigate` semanal (memory leak) | cron semanal | Sustituye al cron |
+| `rpi5-temp-exporter.timer` | RPi5 | temp/throttled → node_exporter cada 60s | — (nuevo) | Visor |
 
 > Para revertir cualquiera: `systemctl disable --now <unit>.timer` y restaurar el cron.
 
@@ -1661,12 +1665,17 @@ abierto" o "proxy OK" NO prueban que la camara viva; el ping a su IP local y el 
 - **Acceso**: proxmox-lugar1 acepta password (`sshpass`); LXC via `pct exec`; RPi5 pide auth interactiva
   Tailscale (bloquea deploy automatizado de RES-4b/cam_urls).
 
-### Pendientes de resiliencia (orden sugerido)
+### Checklist de puesta en marcha (orden sugerido)
 
-1. **Deploy de servicios vivos corregidos** (watchdog/bot/counter/exporter) + env en LXC 200.
-2. **Rotacion periodica de credenciales** (Telegram, Frigate, Grafana, camaras); tras rotar,
-   actualizar el gestor de secretos y `/etc/vigilancia/vigilancia.env`.
-3. **vzdump CT 200 + ensayo de restore** (RES-3).
-4. **RES-4b + cam_urls.env en RPi5** (requiere aprobar la URL interactiva de Tailscale).
-5. **`NTFY_URL`** para el segundo canal (RES-8).
-6. **Fisicos**: UPS LUGAR1 (RES-1), Active Cooler RPi5, HDD+case USB3, prueba de banco cam6.
+Orden recomendado al levantar una instalacion nueva. No es una lista de deuda de ningun
+despliegue concreto.
+
+1. **Fisicos primero**: UPS por isla alimentando computo **y** red (RES-1), cooling activo del
+   visor, disco de backup. Todo lo demas asume que la energia y la red no se caen solas.
+2. **Modelo de secretos**: `/etc/vigilancia/vigilancia.env` (chmod 600) + `EnvironmentFile=` en
+   cada unit, y `git config core.hooksPath scripts/git-hooks` antes del primer commit.
+3. **Backup + ensayo de restore** (RES-2/RES-3): un backup que nunca se restauro no es un backup.
+4. **Timers `Persistent=true`** en vez de crons (RES-9), para no perder un disparo tras un corte.
+5. **Segundo canal de alertas** independiente del primero (RES-8) y dead-man's-switch entre
+   sitios: el host que vigila tiene que poder morir sin llevarse el aviso con el.
+6. **Calibracion**: zonas, mascaras y umbrales sobre tus propios encuadres (seccion 4).
