@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check_backup_pve.sh — Verifica el resultado del backup diario a pve y avisa por
-# Telegram. Corre en el HOST proxmox-lugar1 (cron/timer 07:00). Creado (s5) para
-# confirmar que el disparo automatico de backup-to-pve.timer (02:30) funciona en
+# Telegram. Corre en el HOST proxmox-lugar1 (timer diario). Creado (s5) para
+# confirmar que el disparo automatico de backup-to-pve.timer funciona en
 # frio tras el fix del warmup. Doble como heartbeat diario del backup.
 #
 # Senal primaria: el LOG LOCAL (lectura local, nunca depende de la red). La

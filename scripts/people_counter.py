@@ -45,14 +45,16 @@ METRICS_PORT = int(os.environ.get("METRICS_PORT", "9102"))
 SYNC_INTERVAL = int(os.environ.get("SYNC_INTERVAL", "300"))  # 5 minutos
 QUERY_LIMIT = 500
 
-# Zonas configurables por cámara (None = todas las zonas cuentan)
+# Zonas configurables por cámara (None = todas las zonas cuentan).
+# Rellena con los nombres de zona de TU config de Frigate. Los nombres describen el
+# perímetro físico del sitio, así que conviene no versionarlos en un repo público.
 CAMERA_ZONES = {
-    "cam5_remota": ["zona_1", "banqueta"],
-    "cam6_remota": ["banqueta", "estacionamiento"],
     "cam1_nvr": None,
     "cam2_nvr": None,
     "cam3_nvr": None,
     "cam4_icsee": None,
+    "cam5_remota": None,
+    "cam6_remota": None,
 }
 
 # Tracking de coches por zona (camera -> zonas donde contar coches)
@@ -624,21 +626,21 @@ def report_scheduler():
             now = datetime.now()
             today_str = now.strftime("%Y-%m-%d")
 
-            # Reporte diario a las 23:00
+            # Reporte diario (hora configurable)
             if now.hour == DAILY_REPORT_HOUR and last_daily != today_str:
                 report = generate_daily_report()
                 if send_telegram(report):
                     log.info("Daily report sent")
                 last_daily = today_str
 
-            # Reporte semanal domingos a las 22:00
+            # Reporte semanal
             if now.weekday() == WEEKLY_REPORT_DAY and now.hour == WEEKLY_REPORT_HOUR and last_weekly != today_str:
                 report = generate_weekly_report()
                 if send_telegram(report):
                     log.info("Weekly report sent")
                 last_weekly = today_str
 
-            # Reporte mensual último día del mes a las 22:00
+            # Reporte mensual, último día del mes
             last_day = calendar.monthrange(now.year, now.month)[1]
             if now.day == last_day and now.hour == WEEKLY_REPORT_HOUR and last_monthly != today_str:
                 report = generate_monthly_report()

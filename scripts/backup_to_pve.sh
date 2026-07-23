@@ -18,7 +18,7 @@
 # Despliegue (ver tambien systemd/ — RES-9):
 #   1) crear /etc/vigilancia/vigilancia.env (desde .env.example, chmod 600)
 #   2) probar:  ./backup_to_pve.sh --dry-run
-#   3) instalar el timer:  backup-to-pve.timer (02:30 diario, Persistent=true)
+#   3) instalar el timer:  backup-to-pve.timer (diario nocturno, Persistent=true)
 #
 # Verificacion: cada archivo se compara por sha256 origen-vs-destino tras
 # la copia; si NO coincide, se marca FALLO y se conserva la copia previa.
@@ -140,12 +140,12 @@ if ! command -v pct >/dev/null 2>&1; then
     exit 1
 fi
 # El path Tailscale proxmox-lugar1->pve se enfria si esta idle (ICMP no lo despierta, un
-# TCP connect si). A las 02:30 sin trafico el primer SSH da timeout: una vez
+# TCP connect si). De madrugada, sin trafico, el primer SSH da timeout: una vez
 # el disparo automatico FALLO. Root cause: el warmup usaba 'tailscale ping -c1'
 # pero el flag correcto es '--c <n>' (en tailscale 1.98 '-c1' da "flag provided but
 # not defined" -> exit 2), asi que el warmup NUNCA corrio y la ruta relay-DERP fria
 # mato el SSH. Fix: sintaxis correcta (--c / --timeout) + insistencia + preflight
-# SSH mas largo (8 intentos, backoff 8s). El timer es Persistent a las 02:30, no
+# SSH mas largo (8 intentos, backoff 8s). El timer es Persistent, no
 # hay prisa: preferimos tardar minutos antes que declarar fallo. 'tailscale ping'
 # tira los primeros pings por DERP, lo que despierta la ruta.
 if command -v tailscale >/dev/null 2>&1; then

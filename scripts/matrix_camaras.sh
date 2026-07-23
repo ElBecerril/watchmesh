@@ -10,7 +10,7 @@
 #
 # Fix v3.3:
 #   - CAM4: agregar --untimed, --cache=no, reducir buffers (fix 48% freezes)
-#   - Ventana mantenimiento 06:28-06:33 (evitar cascada por reinicio router)
+#   - Ventana de mantenimiento configurable (evitar cascada por reinicio del router)
 #   - Limpieza de procesos mpv huerfanos cada ciclo
 #
 # Fix v3.2:
@@ -35,9 +35,12 @@ CPU_THRESHOLD=2.0
 FROZEN_CYCLES=3
 ROUTER_IP="192.0.2.1"
 
-# Ventana de mantenimiento (reinicio router)
-MAINTENANCE_START="06:28"
-MAINTENANCE_END="06:33"
+# Ventana de mantenimiento: franja diaria en la que se suprimen los CHECK 3-6.
+# Util si tu router/ISP hace un reinicio programado a la misma hora cada dia.
+# Vacio = desactivada. Configurala por entorno segun TU despliegue, p.ej.:
+#   MAINTENANCE_START=HH:MM MAINTENANCE_END=HH:MM matrix_camaras.sh
+MAINTENANCE_START="${MAINTENANCE_START:-}"
+MAINTENANCE_END="${MAINTENANCE_END:-}"
 
 # IP del peer Tailscale del Lugar 2 para verificar conectividad VPN
 VPN_PEER_IP="100.64.10.3"  # proxy-lugar2 (proxy RTSP Lugar 2)
@@ -114,6 +117,8 @@ check_vpn_connectivity() {
 
 # ============= Verificar ventana de mantenimiento =============
 is_maintenance_window() {
+    # Sin ventana configurada -> nunca suprime checks
+    [[ -z "$MAINTENANCE_START" || -z "$MAINTENANCE_END" ]] && return 1
     local now_hhmm=$(date '+%H:%M')
     [[ ! "$now_hhmm" < "$MAINTENANCE_START" && "$now_hhmm" < "$MAINTENANCE_END" ]]
 }
@@ -423,7 +428,11 @@ watchdog_loop() {
     log "    - VPN check: cada ${VPN_CHECK_INTERVAL}s cuando esta caida"
     log "    - Backoff: 1min(3+), 5min(6+), 15min(10+)"
     log "    - Reinicio general: cada $((PERIODIC_RESTART/3600))h"
-    log "    - Mantenimiento: $MAINTENANCE_START-$MAINTENANCE_END (CHECK 3-6 suprimidos)"
+    if [[ -n "$MAINTENANCE_START" && -n "$MAINTENANCE_END" ]]; then
+        log "    - Mantenimiento: ventana configurada (CHECK 3-6 suprimidos)"
+    else
+        log "    - Mantenimiento: sin ventana configurada"
+    fi
     log "    - Limpieza huerfanos: cada ciclo"
 
     LAST_PERIODIC_RESTART=$(date +%s)

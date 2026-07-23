@@ -5,10 +5,10 @@ Frigate -> Telegram Bot v4
 Features:
   - Teclado con botones (sin necesidad de escribir comandos)
   - Botones inline para seleccionar camara
-  - Alertas inteligentes via MQTT (person/dog/cat inmediato, car si detenido 60s+)
-  - Resumen diario automatico a las 23:00
+  - Alertas inteligentes via MQTT (person/dog/cat inmediato, car solo si permanece detenido)
+  - Resumen diario automatico (hora configurable, DAILY_SUMMARY_HOUR)
   - Descripcion GenAI incluida en alertas cuando disponible
-  - Cooldown 60s por camara+objeto
+  - Cooldown configurable por camara+objeto (COOLDOWN_SECONDS)
 """
 
 import json
@@ -33,12 +33,15 @@ MQTT_HOST = "127.0.0.1"
 MQTT_PORT = 1883
 
 # Face Recognition API
-FACE_API_URL = "http://100.64.10.5:5050"
+FACE_API_URL = os.environ.get("FACE_API_URL", "http://127.0.0.1:5050")
 FACE_API_KEY = os.environ.get("FACE_API_KEY", "")
 
-COOLDOWN_SECONDS = 60
-CAR_STATIONARY_THRESHOLD = 60
-DAILY_SUMMARY_HOUR = 23
+# Parametros de alerta. Son DEFAULTS: ajustalos por entorno segun tu despliegue.
+# Publicar los valores reales equivale a publicar el margen exacto en el que el
+# sistema no notifica nada, asi que conviene no documentarlos fuera del sitio.
+COOLDOWN_SECONDS = int(os.environ.get("COOLDOWN_SECONDS", "60"))
+CAR_STATIONARY_THRESHOLD = int(os.environ.get("CAR_STATIONARY_THRESHOLD", "60"))
+DAILY_SUMMARY_HOUR = int(os.environ.get("DAILY_SUMMARY_HOUR", "23"))
 
 # Tracking (estado compartido entre threads; protegido por state_lock - BUG-16)
 state_lock = threading.Lock()
@@ -855,7 +858,7 @@ def on_message(client, userdata, msg):
     if label not in LABEL_ES:
         return
 
-    # === COCHES: solo si detenido 60s+ ===
+    # === COCHES: solo si llevan detenidos CAR_STATIONARY_THRESHOLD segundos ===
     if label == "car":
         if event_type == "new":
             return
@@ -954,7 +957,7 @@ def main():
         "\U0001f7e2 <b>Sistema de vigilancia activo</b>\n\n"
         "\U0001f4f7 7 camaras monitoreadas\n"
         "\U0001f9e0 Deteccion inteligente activada\n"
-        "\U0001f319 Resumen automatico a las 23:00\n\n"
+        "\U0001f319 Resumen automatico diario\n\n"
         "Usa los botones de abajo para controlar el sistema:",
         reply_markup=build_main_keyboard(),
     )

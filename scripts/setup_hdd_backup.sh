@@ -90,9 +90,10 @@ EOF
 
 cat > /etc/systemd/system/nightly-backup.timer << 'EOF'
 [Unit]
-Description=Nightly Backup Timer - 02:00 daily
+Description=Nightly Backup Timer
 
 [Timer]
+# Hora de EJEMPLO: ajustala en tu despliegue (y no la publiques).
 OnCalendar=*-*-* 02:00:00
 Persistent=true
 RandomizedDelaySec=300
@@ -104,7 +105,7 @@ EOF
 systemctl daemon-reload
 systemctl enable nightly-backup.timer
 systemctl start nightly-backup.timer
-echo "Timer systemd habilitado (02:00 diario)"
+echo "Timer systemd habilitado (diario)"
 
 # 10. Verificar
 echo ""
@@ -113,7 +114,7 @@ echo "  HDD: $PARTITION ($UUID)"
 echo "  Montaje: /mnt/backup-hdd"
 echo "  Capacidad: $(df -h /mnt/backup-hdd | tail -1 | awk '{print $2}')"
 echo "  Script: /root/nightly_backup.sh"
-echo "  Timer: nightly-backup.timer (02:00)"
+echo "  Timer: nightly-backup.timer (diario)"
 echo ""
 echo "Para probar: /root/nightly_backup.sh --dry-run"
 echo "Para verificar timer: systemctl list-timers nightly-backup.timer"

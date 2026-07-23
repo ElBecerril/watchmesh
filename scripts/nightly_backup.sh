@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # Nightly Backup - Mueve grabaciones del NVMe al HDD externo
-# Corre en HOST proxmox-lugar1 via cron/systemd timer a las 02:00
+# Corre en HOST proxmox-lugar1 via systemd timer (horario nocturno configurable)
 #
 # Flujo:
 #   1. Verifica que el HDD este montado
@@ -22,8 +22,8 @@ LXC_ID="200"
 HDD_MOUNT="/mnt/backup-hdd"
 # HDD: preferir montaje por LABEL/UUID (estable) sobre /dev/sdbN, que cambia con
 # el orden de enumeracion USB (BUG-17). Etiquetar el disco una sola vez:
-#   e2label /dev/sdX1 vigilancia-backup     (o anotar su UUID con: blkid /dev/sdX1)
-HDD_LABEL="${HDD_LABEL:-vigilancia-backup}"
+#   e2label /dev/sdX1 <ETIQUETA>            (o anotar su UUID con: blkid /dev/sdX1)
+HDD_LABEL="${HDD_LABEL:-}"
 HDD_UUID="${HDD_UUID:-}"
 HDD_DEVICE_FALLBACK="${HDD_DEVICE:-/dev/sdb1}"  # ultimo recurso si no hay label/uuid
 RECORDINGS_SRC="/opt/vigilancia/storage/recordings"
