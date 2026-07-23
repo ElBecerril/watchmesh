@@ -7,9 +7,9 @@ son ficheros del repo para instalar de forma supervisada.
 
 | Unit | Dónde corre | Qué hace | Reemplaza |
 |------|-------------|----------|-----------|
-| `backup-to-pve.{service,timer}` | HOST proxmox-lugar1 | Backup diario 02:30 de `people_counter.db` + config Frigate a pve (`scripts/backup_to_pve.sh`) | — (nuevo, RES-2) |
+| `backup-to-pve.{service,timer}` | HOST proxmox-lugar1 | Backup diario nocturno de `people_counter.db` + config Frigate a pve (`scripts/backup_to_pve.sh`) | — (nuevo, RES-2) |
 | `rpi5-temp-exporter.{service,timer}` | RPi5 | Cada 60s exporta temp/throttled a node_exporter textfile (`scripts/rpi5_node_textfile_temp.sh`) | — (nuevo, RES-4b) |
-| `frigate-weekly-restart.{service,timer}` | LXC 200 | Restart Frigate domingo 04:00 (memory leak) | cron `dom 04:00` |
+| `frigate-weekly-restart.{service,timer}` | LXC 200 | Restart Frigate semanal (memory leak) | cron semanal |
 | `peer-watch.{service,timer}` | RPi5 (capa 1) | Cada 5 min vigila Lugar 2 + pve por Tailscale y alerta por Telegram solo en transición (`scripts/peer_watch.sh`) | — (nuevo, dead-man's-switch) |
 
 > **Excepción:** `peer-watch.{service,timer}` **SÍ está desplegado** en la RPi5
@@ -53,7 +53,7 @@ Ajustar `FRIGATE_CONTAINER` en el `.service` si el contenedor no se llama `friga
 ```bash
 sudo cp systemd/frigate-weekly-restart.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now frigate-weekly-restart.timer
-sudo crontab -l   # <-- quitar la línea 'dom 04:00 ... docker restart frigate' tras verificar el timer
+sudo crontab -l   # <-- quitar la línea del cron 'docker restart frigate' tras verificar el timer
 ```
 
 ### RPi5 (peer-watch — dead-man's-switch capa 1) — YA DESPLEGADO

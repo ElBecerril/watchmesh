@@ -1,9 +1,10 @@
 [Unit]
-Description=Restart semanal de Frigate (domingo 04:00)
+Description=Restart semanal de Frigate
 
 [Timer]
 OnCalendar=Sun *-*-* 04:00:00
-# Si el LXC estaba apagado el domingo a las 04:00, correr al volver. RES-9.
+# OnCalendar es un EJEMPLO: cambia dia/hora en tu despliegue.
+# Si el LXC estaba apagado a esa hora, correr al volver. RES-9.
 Persistent=true
 RandomizedDelaySec=300
 Unit=frigate-weekly-restart.service

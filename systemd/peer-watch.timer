@@ -1,5 +1,5 @@
 [Unit]
-Description=Run peer_watch (dead-man's-switch capa 1) cada 5 min
+Description=Run peer_watch (dead-man's-switch capa 1)
 
 [Timer]
 OnBootSec=2min

@@ -1,5 +1,5 @@
 [Unit]
-# RES-9 — reemplaza el cron "dom 04:00 docker restart frigate" (LXC 200).
+# RES-9 — reemplaza el cron semanal de 'docker restart frigate' (LXC 200).
 # Mitiga el memory leak de Frigate (~1GB/dia). Complementa el restart por
 # umbral de RSS del emergency_watchdog (RES-7).
 Description=Restart semanal de Frigate (memory leak mitigation)
