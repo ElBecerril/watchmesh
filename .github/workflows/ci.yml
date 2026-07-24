@@ -1,0 +1,51 @@
+name: Lint & Validate
+
+# watchmesh is infrastructure (Python helpers + shell scripts + config), not a
+# library with a unit-test suite. This workflow guards the things that actually
+# break deployments: syntax errors in the Python helpers, hard errors in the
+# shell scripts, and malformed YAML config.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile all Python (syntax check)
+        run: |
+          find . -name '*.py' -not -path './.git/*' -print0 \
+            | xargs -0 python -m py_compile
+
+      - name: Validate YAML config
+        run: |
+          pip install pyyaml
+          python - <<'PY'
+          import glob, sys
+          import yaml
+          bad = False
+          for f in glob.glob("**/*.yml", recursive=True) + glob.glob("**/*.yaml", recursive=True):
+              if "/.git/" in f:
+                  continue
+              try:
+                  list(yaml.safe_load_all(open(f)))
+                  print("ok:", f)
+              except Exception as e:
+                  print("FAIL:", f, e)
+                  bad = True
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: ShellCheck (errors only)
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: error
